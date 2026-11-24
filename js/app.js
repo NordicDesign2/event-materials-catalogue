@@ -990,7 +990,7 @@
           ${b.category === "pastevents" ? `<dt>Made for</dt><dd>${esc(evById(b.event_id)?.event_name || b.section)}</dd>` : ""}
           <dt>Version</dt><dd>${esc(b.version)}</dd>
           ${b.notes ? `<dt>Notes</dt><dd style="font-weight:500">${esc(b.notes)}</dd>` : ""}
-          ${b.source_file ? `<dt>Design file</dt><dd style="font-weight:500;font-size:11px;word-break:break-word">${/^(Print Materials|TESTS & CLINICAL MATERIALS|Promotions For Events)\//.test(b.source_file) ? "" : (b._posterOf ? "Special Offers" : ({ posters: "Posters", brochures: "Print Materials", pricelists: "Price lists", pastevents: "Archived event materials", digital: "Archived event materials" })[b.category] || "Special Offers") + " / "}${esc(b.source_file)}</dd>` : ""}
+          ${b.source_file ? `<dt>Design file</dt><dd style="font-weight:500;font-size:11px;word-break:break-word">${/^(Print Materials|TESTS & CLINICAL MATERIALS|Promotions For Events)\//.test(b.source_file) ? "" : (b._posterOf ? "Special Offers" : ({ posters: "Posters", brochures: "Print Materials", pricelists: "Price lists", pastevents: "Event materials catalogue", digital: "Event materials catalogue" })[b.category] || "Special Offers") + " / "}${esc(b.source_file)}</dd>` : ""}
         </dl>
         ${ev && isOneOff(b) ? `<div class="lb-section"><b>For ${esc(ev.event_name)}</b><div style="margin-top:6px">${tickHTML(b, num(S.draft[b.banner_id]) > 0, locked)}</div></div>` : ""}
         ${ev && !linkOf(b) && !isOneOff(b) ? `<div class="lb-section">
