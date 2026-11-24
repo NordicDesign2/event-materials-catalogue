@@ -238,14 +238,30 @@
     S.movements.forEach((m) => { m.qty = num(m.qty); });
   }
 
+  // While anything is being saved, a "Working…" overlay blocks the page so extra clicks can't queue up
+  const BUSY_TEXT = { deleteEvent: "Deleting event…", addEvent: "Saving event…", saveBooking: "Saving the materials list…", setBookingDay: "Moving to day box…",
+    dispatch: "Marking as dispatched…", checkIn: "Checking items back in…", addIdea: "Sending to the design team…", updateIdea: "Updating design job…",
+    adjustStock: "Updating stock…", markBroken: "Marking as broken…", moveStock: "Moving stock…" };
+  function busy(on, text) {
+    let el = document.getElementById("busy");
+    if (!el) { el = document.createElement("div"); el.id = "busy"; el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite");
+      el.innerHTML = `<div class="busy-card"><div class="busy-spin"></div><div class="busy-text"></div><div class="busy-bar"><span></span></div><div class="busy-sub">Please wait – don't click again</div></div>`; document.body.appendChild(el); }
+    if (on) { el.querySelector(".busy-text").textContent = text || "Saving…"; el.classList.add("on"); S.busy = true; }
+    else { el.classList.remove("on"); S.busy = false; }
+  }
   async function act(payload) {
+    if (S.busy && !S.busyHold) throw new Error("Still saving the last change – one moment");
     payload.by = payload.by || who();
-    if (LIVE) {
-      const r = await fetch(CFG.apiUrl, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error || "Save failed");
-    } else demoApply(payload);
-    await loadAll();
+    busy(true, BUSY_TEXT[payload.action]);
+    try {
+      if (LIVE) {
+        const r = await fetch(CFG.apiUrl, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.error || "Save failed");
+      } else demoApply(payload);
+      if (LIVE) busy(true, "Updating the list…");
+      await loadAll();
+    } finally { if (!S.busyHold) busy(false); }
   }
 
   // Mirrors apps-script/Code.gs so demo mode behaves like the real thing
@@ -1517,7 +1533,7 @@
       else if (a === "to-warehouse") go("warehouse", { whEvent: el.dataset.id });
       else if (a === "close-plan") { if (S.dirty && !confirm("Discard unsaved picks?")) return; S.planEvent = ""; S.dirty = false; render(); }
       else if (a === "save-plan") {
-        el.disabled = true;
+        el.disabled = true; S.busyHold = true;
         const items = Object.entries(S.draft).map(([banner_id, qty]) => ({ banner_id, qty: num(qty), day: (S.draftDay || {})[banner_id] || "" })).filter((i) => i.qty > 0);
         await act({ action: "saveBooking", event_id: S.planEvent, items });
         const ev = evById(S.planEvent); let made = 0;
@@ -1530,6 +1546,7 @@
           made++;
         }
         S.lastSaveMsg = made ? `List saved – ${made} design request${made > 1 ? "s" : ""} added to Reports › Design jobs` : "";
+        S.busyHold = false; busy(false);
         S.dirty = false; render(); toast(S.lastSaveMsg || "List saved – the warehouse can see it now");
       }
       else if (a === "export-plan" || a === "export-event") {
@@ -1554,7 +1571,7 @@
       else if (a === "design-unlock") {
         const code = ($("#design-code") || {}).value || ""; if (!code.trim()) return;
         let name = "";
-        if (LIVE) { const r = await fetch(CFG.apiUrl, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "checkDesignCode", code }) }); const j = await r.json();
+        if (LIVE) { busy(true, "Checking your code…"); let j; try { const r = await fetch(CFG.apiUrl, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "checkDesignCode", code }) }); j = await r.json(); } finally { busy(false); }
           if (!j.ok) return toast(j.error || "That code isn't right", true); name = j.name; }
         else name = who() + " (demo – code not checked)";
         setDesigner(code.trim(), name); S.unlockOpen = false; render(); toast(`Unlocked for ${name}`);
@@ -1640,7 +1657,7 @@
         for (const c of changes) await act({ action: "adjustStock", banner_id: c.id, qty_owned: c.v });
         render(); renderLB(); toast("Stock count updated");
       }
-    } catch (err) { console.error(err); toast(err.message || String(err), true); render(); }
+    } catch (err) { console.error(err); if (S.busyHold) { S.busyHold = false; busy(false); } toast(err.message || String(err), true); render(); }
   });
 
   document.addEventListener("input", (e) => {
