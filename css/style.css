@@ -550,7 +550,7 @@ tr.wh-band td { background: var(--accent-2, #e6f1f4); font-weight: 700; color: v
 .day-chip.dragging { opacity: .4; }
 .day-empty { font-size: 12px; color: var(--ink-3); text-align: center; padding: 18px 4px; }
 
-.day-drop-bar { position: sticky; top: 0; z-index: 5; background: var(--bg, #f4f8f9); padding: 10px 0 10px; margin-bottom: 8px; }
+.day-drop-bar { position: sticky; top: var(--topbar-h, 70px); z-index: 20; background: var(--bg, #f4f8f9); padding: 10px 0 10px; margin-bottom: 8px; box-shadow: 0 8px 10px -10px rgba(0,40,55,.35); }
 .day-drop-hint { font-size: 12.5px; color: #00475a; margin-bottom: 6px; }
 .day-drops { display: flex; gap: 8px; flex-wrap: wrap; }
 .day-drop { flex: 1 1 140px; border: 2px dashed #b9d3db; border-radius: 10px; padding: 8px 10px; background: #fff; display: flex; flex-direction: column; transition: background .15s, border-color .15s, transform .15s; }

@@ -384,7 +384,11 @@
   }
 
   // ───────────────────────── render: shell ──────────────────
+  // Keep sticky strips (e.g. the warehouse day boxes) just under the sticky top bar, whatever its height
+  const setTopbarH = () => { const t = document.querySelector(".topbar"); if (t) document.documentElement.style.setProperty("--topbar-h", t.offsetHeight + "px"); };
+  window.addEventListener("resize", setTopbarH);
   function render() {
+    setTimeout(setTopbarH, 0);
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.view === S.view));
     const planning = S.view === "catalogue" && S.planEvent;
     document.body.classList.toggle("planning", !!planning);
@@ -727,9 +731,9 @@
       return v === d ? [{ r, q: num(r.qty) }] : []; });
   }
   function dayBoard(ev, rows, locked) {
-    const n = daysOf(ev), boxes = ["", ...Array.from({ length: n }, (_, i) => String(i + 1))];
+    const n = daysOf(ev), boxes = Array.from({ length: n }, (_, i) => String(i + 1));
     return `<div class="day-drop-bar">
-      <div class="day-drop-hint">📦 <b>Day boxes</b> – drag a row from the list below onto a box, or use the Day menu on the row.</div>
+      <div class="day-drop-hint">📦 <b>Day boxes</b> – drag a row from the list onto the day it's needed, or use the Day menu on the row. Items with no day can stay as they are.</div>
       <div class="day-drops">${boxes.map((d) => { const chips = dayChips(rows, d), units = chips.reduce((a, c) => a + c.q, 0);
         return `<div class="day-drop ${d ? "" : "unassigned"}" data-dbox="${d}"><b>${d ? `Day ${d}` : "No day yet"}</b><span>${chips.length} item${chips.length === 1 ? "" : "s"}${units ? ` · ${units} pcs` : ""}</span></div>`; }).join("")}</div></div>`;
   }
