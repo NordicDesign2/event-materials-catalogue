@@ -103,3 +103,15 @@ Which version an event needs is set by its country in `config.js`: Nordic Labs r
 
 ## Event requests
 The **Request an event** form (Events page) adds the request to the Events tab and emails it to **se@nordicgroup.eu**, with the requester as reply-to. To change the address, edit `REQUEST_EMAIL` in `apps-script/Code.gs` (and `requestEmail` in `config.js`, which is shown on the form). The first time the script sends mail, Google asks you to allow it.
+
+
+## Design team codes (who can change design job statuses)
+
+Only the design team can change the status of a job in **Reports › Design jobs**. Each designer has their own code:
+
+1. In the Google Sheet, open **Extensions › Apps Script**, then **Project Settings** (the cog on the left).
+2. Under **Script properties**, click **Add script property**.
+3. Property: `DESIGN_CODES` – Value: one `Name = code` per person, separated by `;`, for example `Anna = 4821; Ben = 7730`.
+4. Save. To change a code or add/remove a person, edit the value – no need to redeploy.
+
+On the site, a designer clicks **Unlock to change status** and enters their code once per computer; their name is then recorded on every status change. Everyone else can still see all jobs and statuses.

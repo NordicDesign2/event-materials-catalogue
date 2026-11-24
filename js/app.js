@@ -93,6 +93,10 @@
     const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
     clearTimeout(toastT); toastT = setTimeout(() => (t.className = "toast"), 2600);
   }
+  // Design-job statuses can only be changed by the design team, each with their own code
+  const designCode = () => { try { return localStorage.getItem("emc-design-code") || S._dcode || ""; } catch (e) { return S._dcode || ""; } };
+  const designerName = () => { try { return localStorage.getItem("emc-designer") || S._dname || ""; } catch (e) { return S._dname || ""; } };
+  const setDesigner = (code, name) => { S._dcode = code; S._dname = name; try { if (code) { localStorage.setItem("emc-design-code", code); localStorage.setItem("emc-designer", name); } else { localStorage.removeItem("emc-design-code"); localStorage.removeItem("emc-designer"); } } catch (e) {} };
   function who() {
     let n = ""; try { n = localStorage.getItem("emc-user") || ""; } catch (e) {}
     if (!n) { n = (window.prompt("Your name (shown in the activity log):") || "").trim() || "Unknown"; try { localStorage.setItem("emc-user", n); } catch (e) {} }
@@ -1274,6 +1278,9 @@
         ${[["open", "Still to make"], ["New", "To do"], ["In design", "In design"], ["Done", "Done"], ["all", "All"]].map(([k, l]) => `<button class="chip ${f === k ? "on" : ""}" data-jobfilter="${k}">${l}</button>`).join("")}
         <span class="result-count"><button class="btn small" data-act="export-jobs">Download CSV</button> <button class="btn small" data-act="print-jobs">Print</button></span>
       </div>
+      <div class="design-lock ${designCode() ? "open" : ""}">${designCode()
+        ? `🔓 Unlocked for <b>${esc(designerName())}</b> on this computer – status changes are recorded under your name. <button class="btn small" data-act="design-lock">Lock again</button>`
+        : `🔒 Only the design team can change a job's status. ${S.unlockOpen ? `<input type="password" id="design-code" placeholder="Your design team code" autocomplete="off"> <button class="btn small primary" data-act="design-unlock">Unlock</button> <button class="btn small" data-act="design-unlock-cancel">Cancel</button>` : `<button class="btn small" data-act="design-unlock-open">Unlock to change status</button>`}`}</div>
       ${list.length ? `<div class="table-wrap" id="jobs-table"><table class="tbl">
         <thead><tr><th></th><th>What to make</th><th>For event</th><th>In the style of</th><th class="num">Copies</th><th>Needed by</th><th>Status</th><th class="no-print">Note</th></tr></thead>
         <tbody>${list.map((j) => `<tr>
@@ -1283,8 +1290,8 @@
           <td>${j.src ? esc(styleName(j.src)) : "—"}</td>
           <td class="num">${j.copies || "—"}</td>
           <td>${j.due ? fmtDate(j.due) : "—"}</td>
-          <td><select data-ideastatus="${esc(j.idea_id)}" aria-label="Status">${JOB_STATUS.map(([v, l]) => `<option value="${v}" ${j.status === v ? "selected" : ""}>${l}</option>`).join("")}</select><span class="print-only">${esc(jobLabel(j.status))}</span></td>
-          <td class="no-print"><div style="display:flex;gap:6px"><input type="text" placeholder="Note…" data-ideanote="${esc(j.idea_id)}" style="width:130px"><button class="btn small" data-act="idea-save" data-id="${esc(j.idea_id)}">Update</button></div></td>
+          <td><select data-ideastatus="${esc(j.idea_id)}" aria-label="Status" ${designCode() ? "" : "disabled"}>${JOB_STATUS.map(([v, l]) => `<option value="${v}" ${j.status === v ? "selected" : ""}>${l}</option>`).join("")}</select><span class="print-only">${esc(jobLabel(j.status))}</span></td>
+          <td class="no-print"><div style="display:flex;gap:6px"><input type="text" placeholder="Note…" data-ideanote="${esc(j.idea_id)}" style="width:130px" ${designCode() ? "" : "disabled"}><button class="btn small" ${designCode() ? "" : "disabled"} data-act="idea-save" data-id="${esc(j.idea_id)}">Update</button></div></td>
         </tr>`).join("")}</tbody></table></div>`
       : `<div class="empty"><h2>${f === "In design" ? "Nothing in design yet" : f === "Done" ? "Nothing finished yet" : f === "open" ? "Nothing for the design team to make" : "No design jobs here"}</h2><p>${f === "In design"
         ? `When a designer starts a job, change its <b>Status</b> from “To do” to “In design” (in the <b>To do</b> list) and it moves here.${n("New") ? ` There ${n("New") === 1 ? "is 1 job" : `are ${n("New")} jobs`} waiting in To do.` : ""}`
@@ -1541,13 +1548,26 @@
       else if (a === "open-event") { e.preventDefault(); const ev = evById(el.dataset.id); closeLB(); go("events", { evTab: ev && isClosed(ev) ? "archive" : "upcoming", evType: "all" });
         setTimeout(() => { const c = document.getElementById("ev-" + el.dataset.id); if (c) { c.scrollIntoView({ block: "center" }); c.classList.add("flash"); } }, 50); }
       else if (a === "idea-from") { const b = byId(el.dataset.id); closeLB(); S.ideaDraft = { related: el.dataset.id, type: b && !b.tracked ? (b.category === "posters" ? "New poster" : b.category === "brochures" ? "Change to an existing item" : b.category === "pricelists" ? "Change to an existing item" : b.category === "pastevents" ? "Adapt for another event" : "New special offer") : "Change to an existing item" }; go("ideas"); }
+      else if (a === "design-unlock-open") { S.unlockOpen = true; render(); setTimeout(() => { const i = $("#design-code"); if (i) i.focus(); }, 0); }
+      else if (a === "design-unlock-cancel") { S.unlockOpen = false; render(); }
+      else if (a === "design-lock") { setDesigner("", ""); render(); toast("Locked"); }
+      else if (a === "design-unlock") {
+        const code = ($("#design-code") || {}).value || ""; if (!code.trim()) return;
+        let name = "";
+        if (LIVE) { const r = await fetch(CFG.apiUrl, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "checkDesignCode", code }) }); const j = await r.json();
+          if (!j.ok) return toast(j.error || "That code isn't right", true); name = j.name; }
+        else name = who() + " (demo – code not checked)";
+        setDesigner(code.trim(), name); S.unlockOpen = false; render(); toast(`Unlocked for ${name}`);
+      }
       else if (a === "idea-new") { S.ideaDraft = { type: "New banner" }; render(); }
       else if (a === "idea-cancel") { S.ideaDraft = null; render(); }
       else if (a === "idea-save") {
         const id = el.dataset.id, status = $(`[data-ideastatus="${id}"]`).value, note = $(`[data-ideanote="${id}"]`).value.trim();
         const cur = S.ideas.find((i) => i.idea_id === id) || {};
         const changes = { status }; if (note) changes.designer_notes = (cur.designer_notes ? cur.designer_notes + " · " : "") + note;
-        await act({ action: "updateIdea", idea_id: id, changes }); render(); toast("Design job updated");
+        if (!designCode()) { S.unlockOpen = true; render(); return toast("Unlock with your design team code first", true); }
+        try { await act({ action: "updateIdea", idea_id: id, changes, code: designCode(), by: designerName() }); render(); toast("Design job updated"); }
+        catch (err) { if (/design team/i.test(err.message)) { setDesigner("", ""); render(); } throw err; }
       }
       else if (a === "show-made") { const ev = evById(el.dataset.id); S.cat = "pastevents"; resetFilters(); S.f.section = ev ? ev.event_name : "all"; go("catalogue"); }
       else if (a === "toggle-new-event") { S.showNewEvent = !S.showNewEvent; S.showRequest = false; render(); }

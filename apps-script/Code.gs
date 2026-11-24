@@ -179,8 +179,19 @@ function doPost(e) {
         (idea.needed_by ? 'Needed by: ' + idea.needed_by + '\n' : '') + (idea.related_items ? 'Based on: ' + idea.related_items + '\n' : '') +
         '\nSee all design jobs: ' + SITE_URL + '#reports/jobs');
 
+    } else if (p.action === 'checkDesignCode') {
+      const who = designerFor_(p.code);
+      if (!who) throw new Error("That code isn't right – ask a design team member");
+      return json_({ ok: true, name: who });
+
     } else if (p.action === 'updateIdea') {
-      updateWhere_('Ideas', (r) => r.idea_id === p.idea_id, () => Object.assign({}, p.changes || {}, { updated_at: now, updated_by: by }));
+      const ch = p.changes || {};
+      let byWho = by;
+      if ('status' in ch || 'designer_notes' in ch) {
+        byWho = designerFor_(p.code);
+        if (!byWho) throw new Error('Only the design team can change the status of design jobs – unlock with your design team code');
+      }
+      updateWhere_('Ideas', (r) => r.idea_id === p.idea_id, () => Object.assign({}, ch, { updated_at: now, updated_by: byWho }));
 
     } else if (p.action === 'adjustStock') {
       let old = 0;
@@ -199,6 +210,15 @@ function doPost(e) {
 }
 
 // ─────────────────────────── helpers ───────────────────────
+// Design team codes live in Project Settings → Script properties → DESIGN_CODES, e.g.  Anna = 4821; Ben = 7730
+// (one "Name = code" per person, separated by ; or new lines). Change them there at any time.
+function designerFor_(code) {
+  code = String(code || '').trim(); if (!code) return '';
+  const raw = PropertiesService.getScriptProperties().getProperty('DESIGN_CODES') || '';
+  const hit = raw.split(/[;\n]/).map((x) => x.split('=')).filter((x) => x.length === 2).find((x) => x[1].trim() === code);
+  return hit ? hit[0].trim() : '';
+}
+
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }

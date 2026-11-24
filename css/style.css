@@ -602,3 +602,7 @@ tr.drag-row.dragging { opacity: .4; }
 .box-band.complete td { background: #d9f0e7 !important; }
 .box-band .box-prog { float: right; font-size: 13px; font-weight: 700; color: #00475a; }
 .box-band.complete .box-prog { color: #2f7d6a; }
+
+.design-lock { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #fff8ec; border: 1px solid #f0d4a3; color: #7a4b00; padding: 8px 12px; border-radius: 10px; margin: 0 0 10px; font-size: 13px; }
+.design-lock.open { background: #e8f4f1; border-color: #a9d8c9; color: #1f5e4f; }
+.design-lock input { padding: 5px 8px; border: 1px solid #d7c39b; border-radius: 6px; font: inherit; width: 190px; }
