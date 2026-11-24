@@ -245,7 +245,7 @@
   function busy(on, text) {
     let el = document.getElementById("busy");
     if (!el) { el = document.createElement("div"); el.id = "busy"; el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite");
-      el.innerHTML = `<div class="busy-card"><div class="busy-spin"></div><div class="busy-text"></div><div class="busy-bar"><span></span></div><div class="busy-sub">Please wait – don't click again</div></div>`; document.body.appendChild(el); }
+      el.innerHTML = `<div class="busy-card"><div class="busy-spin"></div><div class="busy-text"></div><div class="busy-sub">Please wait – don't click again</div></div>`; document.body.appendChild(el); }
     if (on) { el.querySelector(".busy-text").textContent = text || "Saving…"; el.classList.add("on"); S.busy = true; }
     else { el.classList.remove("on"); S.busy = false; }
   }

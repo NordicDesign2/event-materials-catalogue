@@ -617,3 +617,4 @@ tr.drag-row.dragging { opacity: .4; }
 .busy-sub { font-size: 12px; color: var(--ink-3, #5b7480); }
 @keyframes busy-spin { to { transform: rotate(360deg); } }
 @keyframes busy-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+.busy-sub { margin-top: 6px; }
