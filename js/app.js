@@ -50,6 +50,7 @@
   // ───────────────────────── helpers ───────────────────────
   const $ = (sel, el = document) => el.querySelector(sel);
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const OPEN_JOB = ["New", "In design", "In review", "Making edits"]; // design jobs still to finish
   const num = (v) => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) ? n : 0; };
   const uniq = (arr) => [...new Set(arr.filter((x) => x !== "" && x != null))];
   const byId = (id) => S.banners.find((b) => b.banner_id === id);
@@ -384,7 +385,7 @@
     const nm = (b) => (isDesign(b) ? designLabel(b) : b.name);
     const line = (r, q, extra) => { const j = jobOf(r.banner_id);
       return `<div class="ep-i" data-zoom="${esc(r.banner_id)}">${thumbHTML(r.b)}<div><b>${esc(nm(r.b))}</b><div class="muted">${esc([isOneOff(r.b) ? r.b.section || "Digital asset" : isDesign(r.b) ? "Design team makes it" : r.b.tracked ? (r.b.stored_at || "") : "Print run", extra].filter(Boolean).join(" · "))}</div></div>
-        <span class="ep-q">${isOneOff(r.b) ? "" : "× " + q}</span>${j ? `<span class="pill ${j.status === "Done" ? "good" : j.status === "In design" ? "warn" : ""}">${esc(jobLabel(j.status))}</span>` : ""}</div>`; };
+        <span class="ep-q">${isOneOff(r.b) ? "" : "× " + q}</span>${j ? `<span class="pill ${j.status === "Done" ? "good" : OPEN_JOB.includes(j.status) && j.status !== "New" ? "warn" : ""}">${esc(jobLabel(j.status))}</span>` : ""}</div>`; };
     const pre = rows.filter((r) => isOneOff(r.b) || r.day === "pre");
     const daysRows = (d) => rows.flatMap((r) => { if (isOneOff(r.b) || r.day === "pre") return []; const v = r.day || "";
       if (isSplit(v)) { const m = parseSplit(v); return num(m[d]) > 0 ? [[r, num(m[d]), "split"]] : []; } return v === d ? [[r, num(r.qty)]] : []; });
@@ -398,7 +399,7 @@
         <div style="display:flex;gap:6px"><button class="btn small" data-act="plan" data-id="${esc(evId)}">Edit materials</button><button class="btn small" data-act="to-warehouse" data-id="${esc(evId)}">Warehouse</button><button class="btn small" data-act="show-evplan" data-id="${esc(evId)}">Close</button></div></div>
       <div class="ep-cols">
         <div>${sec("🗓 Before the event", "Run-up, digital and anything sent or made ahead", pre.map((r) => line(r, r.qty)).join("") + (runup.length && !pre.some((r) => r.b.category === "digital") ? `<div class="muted" style="margin-top:6px">${runup.length} digital assets were made for this event – <a href="#" data-act="show-runup" data-id="${esc(evId)}">see the run-up</a>.</div>` : ""), "pre")}
-          ${jobs.length ? sec("🎨 Design jobs", `${jobs.filter((j) => ["New", "In design"].includes(j.status)).length} still to make`, jobs.map((j) => `<div class="ep-i">${j.src ? thumbHTML(j.src) : "<span></span>"}<div><b>${esc(j.src && j.src.material ? j.src.material : j.title)}</b><div class="muted">${j.due ? "Needed by " + fmtDate(j.due) : ""}</div></div><span></span><span class="pill ${j.status === "Done" ? "good" : j.status === "In design" ? "warn" : ""}">${esc(jobLabel(j.status))}</span></div>`).join("")) : ""}</div>
+          ${jobs.length ? sec("🎨 Design jobs", `${jobs.filter((j) => OPEN_JOB.includes(j.status)).length} still to make`, jobs.map((j) => `<div class="ep-i">${j.src ? thumbHTML(j.src) : "<span></span>"}<div><b>${esc(j.src && j.src.material ? j.src.material : j.title)}</b><div class="muted">${j.due ? "Needed by " + fmtDate(j.due) : ""}</div></div><span></span><span class="pill ${j.status === "Done" ? "good" : OPEN_JOB.includes(j.status) && j.status !== "New" ? "warn" : ""}">${esc(jobLabel(j.status))}</span></div>`).join("")) : ""}</div>
         <div>${noDay.length ? sec("📦 Whole event / no day set", `${noDay.length} item${noDay.length > 1 ? "s" : ""}`, noDay.map(([r, q]) => line(r, q)).join("")) : ""}
           ${Array.from({ length: n }, (_, i) => String(i + 1)).map((d) => { const l = daysRows(d); return sec(`📦 Day ${d}`, l.length ? `${l.length} item${l.length > 1 ? "s" : ""} · ${l.reduce((a, x) => a + x[1], 0)} pcs` : "", l.map(([r, q, x]) => line(r, q, x === "split" ? "part of a split" : "")).join("")); }).join("")}</div>
       </div></div>`;
@@ -450,7 +451,7 @@
     else if (S.view === "events") v.innerHTML = viewEvents();
     else if (S.view === "warehouse") v.innerHTML = viewWarehouse();
     else if (S.view === "reports") v.innerHTML = viewReports();
-    const nNew = S.ideas.filter((i) => i.status === "New" || i.status === "In design").length, badge = $("#ideas-badge");
+    const nNew = S.ideas.filter((i) => OPEN_JOB.includes(i.status)).length, badge = $("#ideas-badge");
     if (badge) { badge.hidden = !nNew; badge.textContent = nNew; }
     if (planning) renderTray();
   }
@@ -1150,7 +1151,7 @@
       ${e.country ? `<div class="muted" style="font-size:12px">Branding: <b>${esc(regionOf(e.country))}</b></div>` : ""}
       ${e.status === "Requested" || e.requested_by ? `<div class="request-box"><b>📨 Requested by ${esc(e.requested_by || "sales")}</b>${e.request_type ? ` · ${esc(e.request_type)}` : ""}
         ${e.materials_requested ? `<div>Wants: ${esc(e.materials_requested)}</div>` : ""}${e.attendees ? `<div class="muted">~${esc(e.attendees)} attendees${e.brand_region ? " · " + esc(e.brand_region) : ""}</div>` : e.brand_region ? `<div class="muted">${esc(e.brand_region)}</div>` : ""}</div>` : ""}
-      ${!archive ? (() => { const jobs = S.ideas.filter((j) => j.event_id === e.event_id), open = jobs.filter((j) => ["New", "In design"].includes(j.status)).length;
+      ${!archive ? (() => { const jobs = S.ideas.filter((j) => j.event_id === e.event_id), open = jobs.filter((j) => OPEN_JOB.includes(j.status)).length;
         return `<div class="compile"><b>${rows.length ? `${rows.length} item${rows.length > 1 ? "s" : ""} on the list` : "Nothing picked yet"}</b>${jobs.length ? ` · <a href="#reports" data-act="go-jobs">${open} of ${jobs.length} design job${jobs.length > 1 ? "s" : ""} still to make</a>` : ""}</div>`; })() : ""}
       ${rows.length ? `<div class="strip">${rows.slice(0, 12).map((r) => thumbHTML(byId(r.banner_id) || {})).join("")}</div><div class="muted">${rows.length} designs · ${units} banners${archive && st === "Returned" ? (lost ? ` · <b style="color:var(--bad)">${lost} damaged/missing</b>` : " · all returned") : ""}</div>` : archive && !e.featured_items ? `<div class="muted">No materials recorded</div>` : ""}
       ${e.notes ? `<div class="muted" style="font-size:12px">${esc(e.notes)}</div>` : ""}
@@ -1272,14 +1273,14 @@
 
   // ───────────────────────── reports ───────────────────────
   function viewReports() {
-    const open = S.ideas.filter((i) => i.status === "New" || i.status === "In design").length;
+    const open = S.ideas.filter((i) => OPEN_JOB.includes(i.status)).length;
     const tabs = [["jobs", `Design jobs${open ? ` · ${open} to do` : ""}`], ["stock", "Stock levels"], ["out", "Out at events"], ["taken", "Taken at events"], ["losses", "Losses & damage"], ["log", "Activity log"], ["audit", "Visual audit"]];
     const nav = `<div class="page-head"><div><h1>Reports</h1><div class="muted">Everything here is worked out from the master sheet – nothing to keep in sync.</div></div></div>
       <div class="subtabs">${tabs.map(([k, l]) => `<button class="chip ${S.reportTab === k ? "on" : ""}" data-rtab="${k}">${l}</button>`).join("")}</div>`;
     return nav + ({ jobs: repJobs, stock: repStock, out: repOut, taken: repTaken, losses: repLosses, log: repLog, audit: repAudit }[S.reportTab])();
   }
   // Design jobs – materials the design team needs to make for an event (created when someone picks a "Made for each event" style)
-  const JOB_STATUS = [["New", "To do"], ["In design", "In design"], ["Done", "Done"], ["Not now", "Not needed"]];
+  const JOB_STATUS = [["New", "To do"], ["In design", "In design"], ["In review", "In review"], ["Making edits", "Making edits"], ["Done", "Done"], ["Not now", "Not needed"]];
   const jobLabel = (s) => (JOB_STATUS.find((x) => x[0] === s) || [s, s])[1];
   function jobRows() {
     return S.ideas.map((j) => {
@@ -1290,16 +1291,18 @@
   }
   function repJobs() {
     const f = S.jobFilter || "open";
-    const all = jobRows(), list = all.filter((j) => f === "all" || (f === "open" ? ["New", "In design"].includes(j.status) : j.status === f));
+    const all = jobRows(), list = all.filter((j) => f === "all" || (f === "open" ? OPEN_JOB.includes(j.status) : j.status === f));
     const n = (s) => all.filter((j) => j.status === s).length;
     S.lbList = list.map((j) => j.src && j.src.banner_id).filter(Boolean);
     return `<div class="summary-cards">
         <div class="panel"><b>${n("New")}</b><span>to do</span></div>
         <div class="panel"><b>${n("In design")}</b><span>in design</span></div>
+        <div class="panel"><b>${n("In review")}</b><span>in review</span></div>
+        <div class="panel"><b>${n("Making edits")}</b><span>making edits</span></div>
         <div class="panel"><b>${n("Done")}</b><span>done</span></div>
       </div>
       <div class="filters">
-        ${[["open", "Still to make"], ["New", "To do"], ["In design", "In design"], ["Done", "Done"], ["all", "All"]].map(([k, l]) => `<button class="chip ${f === k ? "on" : ""}" data-jobfilter="${k}">${l}</button>`).join("")}
+        ${[["open", "Still to make"], ["New", "To do"], ["In design", "In design"], ["In review", "In review"], ["Making edits", "Making edits"], ["Done", "Done"], ["all", "All"]].map(([k, l]) => `<button class="chip ${f === k ? "on" : ""}" data-jobfilter="${k}">${l}</button>`).join("")}
         <span class="result-count"><button class="btn small" data-act="export-jobs">Download CSV</button> <button class="btn small" data-act="print-jobs">Print</button></span>
       </div>
       <div class="design-lock ${designCode() ? "open" : ""}">${designCode()
@@ -1317,7 +1320,7 @@
           <td><select data-ideastatus="${esc(j.idea_id)}" aria-label="Status" ${designCode() ? "" : "disabled"}>${JOB_STATUS.map(([v, l]) => `<option value="${v}" ${j.status === v ? "selected" : ""}>${l}</option>`).join("")}</select><span class="print-only">${esc(jobLabel(j.status))}</span></td>
           <td class="no-print"><div style="display:flex;gap:6px"><input type="text" placeholder="Note…" data-ideanote="${esc(j.idea_id)}" style="width:130px" ${designCode() ? "" : "disabled"}><button class="btn small" ${designCode() ? "" : "disabled"} data-act="idea-save" data-id="${esc(j.idea_id)}">Update</button></div></td>
         </tr>`).join("")}</tbody></table></div>`
-      : `<div class="empty"><h2>${f === "In design" ? "Nothing in design yet" : f === "Done" ? "Nothing finished yet" : f === "open" ? "Nothing for the design team to make" : "No design jobs here"}</h2><p>${f === "In design"
+      : `<div class="empty"><h2>${f === "In design" ? "Nothing in design yet" : f === "In review" ? "Nothing in review" : f === "Making edits" ? "No edits in progress" : f === "Done" ? "Nothing finished yet" : f === "open" ? "Nothing for the design team to make" : "No design jobs here"}</h2><p>${f === "In review" ? "Set a job's <b>Status</b> to “In review” when its proof has gone to someone to check, and it moves here." : f === "Making edits" ? "Set a job's <b>Status</b> to “Making edits” while feedback from a review is being worked in." : f === "In design"
         ? `When a designer starts a job, change its <b>Status</b> from “To do” to “In design” (in the <b>To do</b> list) and it moves here.${n("New") ? ` There ${n("New") === 1 ? "is 1 job" : `are ${n("New")} jobs`} waiting in To do.` : ""}`
         : f === "Done" ? "Set a job's <b>Status</b> to “Done” once its file has gone to print and it moves here."
         : "Jobs appear here when someone picks something from <b>Made for each event</b>, <b>Digital assets</b> or <b>From past events</b> for an event and saves the list."}</p></div>`}`;
@@ -1432,11 +1435,11 @@
 
   // ───────────────────────── ideas board ───────────────────
   const IDEA_TYPES = ["Adapt for another event", "New banner", "New backlit / large banner", "New poster", "New special offer", "New test focus", "Change to an existing item", "Other"];
-  const IDEA_STATUS = ["New", "In design", "Done", "Not now"];
-  const ideaPill = { New: "warn", "In design": "accent", Done: "good", "Not now": "" };
+  const IDEA_STATUS = ["New", "In design", "In review", "Making edits", "Done", "Not now"];
+  const ideaPill = { New: "warn", "In design": "accent", "In review": "accent", "Making edits": "accent", Done: "good", "Not now": "" };
   function viewIdeas() {
     const d = S.ideaDraft;
-    const list = S.ideas.slice().reverse().filter((i) => S.ideaFilter === "all" || (S.ideaFilter === "open" ? i.status === "New" || i.status === "In design" : i.status === S.ideaFilter));
+    const list = S.ideas.slice().reverse().filter((i) => S.ideaFilter === "all" || (S.ideaFilter === "open" ? OPEN_JOB.includes(i.status) : i.status === S.ideaFilter));
     const relHTML = (ids) => uniq(String(ids || "").split(/[,\s]+/)).map(byId).filter(Boolean).map((b) => `<div class="rel" title="${esc(b.name)}">${thumbHTML(b)}<span>${esc(b.name)}</span></div>`).join("");
     const counts = Object.fromEntries(IDEA_STATUS.map((s) => [s, S.ideas.filter((i) => i.status === s).length]));
     return `
@@ -1458,7 +1461,7 @@
         <div style="margin-top:12px;display:flex;gap:8px"><button class="btn primary" type="submit">Send to design team</button><button class="btn" type="button" data-act="idea-cancel">Cancel</button></div>
       </form>` : ""}
       <div class="subtabs">
-        ${[["open", `Open (${counts.New + counts["In design"]})`], ...IDEA_STATUS.map((s) => [s, `${s} (${counts[s]})`]), ["all", `All (${S.ideas.length})`]].map(([k, l]) => `<button class="chip ${S.ideaFilter === k ? "on" : ""}" data-ideafilter="${esc(k)}">${l}</button>`).join("")}
+        ${[["open", `Open (${OPEN_JOB.reduce((a, k) => a + (counts[k] || 0), 0)})`], ...IDEA_STATUS.map((s) => [s, `${s} (${counts[s]})`]), ["all", `All (${S.ideas.length})`]].map(([k, l]) => `<button class="chip ${S.ideaFilter === k ? "on" : ""}" data-ideafilter="${esc(k)}">${l}</button>`).join("")}
       </div>
       ${list.length ? `<div class="ideas">${list.map((i) => `
         <div class="panel idea">
