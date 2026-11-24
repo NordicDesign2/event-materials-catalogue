@@ -276,6 +276,7 @@
       if (!st.events.some((e) => e.event_id === p.event_id)) throw new Error("Only events added here can be deleted in demo mode");
       st.events = st.events.filter((e) => e.event_id !== p.event_id);
       st.bookings = st.bookings.filter((b) => b.event_id !== p.event_id);
+      st.ideas = (st.ideas || []).filter((i) => !(i.event_id === p.event_id && i.status === "New")); // design jobs not started yet go too
     } else if (p.action === "addIdea") {
       st.ideas = st.ideas || [];
       const n = st.ideas.reduce((m, x) => Math.max(m, num(String(x.idea_id).replace(/\D/g, ""))), 0) + 1;
@@ -1050,7 +1051,7 @@
         <button class="btn ${archive ? "" : "primary"} small" data-act="plan" data-id="${esc(e.event_id)}">${st && st !== "Requested" ? "View materials" : rows.length ? "Edit materials" : "Pick materials"}</button>
         ${rows.length ? `<button class="btn small" data-act="to-warehouse" data-id="${esc(e.event_id)}">Warehouse</button>
         <button class="btn small" data-act="export-event" data-id="${esc(e.event_id)}">CSV</button>` : ""}
-        ${LIVE || e._added ? `<button class="btn small danger-btn" data-act="delete-event" data-id="${esc(e.event_id)}" title="Delete this event and its materials list">${S.confirmDel === e.event_id ? "Click again to delete" : "Delete"}</button>` : ""}
+        ${LIVE || e._added ? `<button class="btn small danger-btn" data-act="delete-event" data-id="${esc(e.event_id)}" title="Delete this event, its materials list and any design jobs not started yet">${S.confirmDel === e.event_id ? "Click again to delete" : "Delete"}</button>` : ""}
       </div>
     </div>`;
   }
@@ -1142,7 +1143,7 @@
   // ───────────────────────── reports ───────────────────────
   function viewReports() {
     const open = S.ideas.filter((i) => i.status === "New" || i.status === "In design").length;
-    const tabs = [["jobs", `Design jobs${open ? ` (${open})` : ""}`], ["stock", "Stock levels"], ["out", "Out at events"], ["taken", "Taken at events"], ["losses", "Losses & damage"], ["log", "Activity log"], ["audit", "Visual audit"]];
+    const tabs = [["jobs", `Design jobs${open ? ` · ${open} to do` : ""}`], ["stock", "Stock levels"], ["out", "Out at events"], ["taken", "Taken at events"], ["losses", "Losses & damage"], ["log", "Activity log"], ["audit", "Visual audit"]];
     const nav = `<div class="page-head"><div><h1>Reports</h1><div class="muted">Everything here is worked out from the master sheet – nothing to keep in sync.</div></div></div>
       <div class="subtabs">${tabs.map(([k, l]) => `<button class="chip ${S.reportTab === k ? "on" : ""}" data-rtab="${k}">${l}</button>`).join("")}</div>`;
     return nav + ({ jobs: repJobs, stock: repStock, out: repOut, taken: repTaken, losses: repLosses, log: repLog, audit: repAudit }[S.reportTab])();
@@ -1411,7 +1412,7 @@
           const b = byId(it.banner_id);
           if (!isDesign(b) || designReq(S.planEvent, b.banner_id)) continue;
           await act({ action: "addIdea", idea: { type: "Adapt for another event", title: `${b.material || b.name} for ${ev.event_name}`,
-            details: `${it.qty} copies needed for ${ev.event_name}${ev.city ? " (" + ev.city + ")" : ""}, in the style of the one made for ${evById(b.event_id)?.event_name || b.section} – update the event name, dates, venue, prices and offers, then send the print file.`,
+            details: `${isOneOff(b) ? "Needed" : it.qty + " copies needed"} for ${ev.event_name}${ev.city ? " (" + ev.city + ")" : ""}, in the style of the one made for ${evById(b.event_id)?.event_name || b.section} – update the event name, dates, venue, prices and offers, then send the print file.`,
             related_items: b.banner_id, event_id: ev.event_id, needed_by: ev.ship_by || ev.start_date || "", markets: [ev.city, ev.country].filter(Boolean).join(", ") } });
           made++;
         }

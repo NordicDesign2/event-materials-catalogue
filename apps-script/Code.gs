@@ -152,6 +152,7 @@ function doPost(e) {
       if (!p.event_id) throw new Error('No event given');
       deleteWhere_('Events', (r) => r.event_id === p.event_id);
       deleteWhere_('Bookings', (r) => r.event_id === p.event_id);
+      deleteWhere_('Ideas', (r) => r.event_id === p.event_id && r.status === 'New');
 
     } else if (p.action === 'addEvent') {
       const ev = p.event || {};
