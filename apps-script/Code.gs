@@ -20,7 +20,7 @@ const NOTIFY_EMAIL = '';
 const REQUEST_EMAIL = 'se@nordicgroup.eu';
 
 // ▼ Set this to your GitHub Pages address before running setup()
-const SITE_URL = 'https://YOUR-USERNAME.github.io/event-catalogue/';
+const SITE_URL = 'https://nordicdesign2.github.io/event-materials-catalogue/';
 
 const TABS = {
   Banners: ['banner_id', 'name', 'brand', 'section', 'language', 'stored_at', 'banner_type', 'qty_owned', 'status',
