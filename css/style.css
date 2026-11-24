@@ -496,3 +496,19 @@ tr.wh-band td { background: var(--accent-2, #e6f1f4); font-weight: 700; color: v
 
 .cat-icon.digital { width: 24px; height: 40px; border-radius: 6px; }
 .cat-icon.digital::after { left: 50%; right: auto; bottom: 4px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; }
+
+/* Narrow windows (side panel, tablet): category buttons wrap into a tidy grid instead of squashing into one row */
+@media (max-width: 900px) {
+  .cat-switch { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; }
+  .cat { min-width: 0; flex: none; padding: 10px 12px; gap: 10px; }
+  .cat b { font-size: 14px; line-height: 1.25; }
+  .cat small { font-size: 12px; }
+}
+@media (max-width: 420px) {
+  .cat-switch { grid-template-columns: 1fr 1fr; }
+}
+/* The category buttons always take their own full-width row under the heading */
+.cat-switch { flex: 1 1 100%; }
+@media (max-width: 900px) {
+  .tabs { flex: 1 1 100%; }
+}
