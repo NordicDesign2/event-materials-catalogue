@@ -631,7 +631,8 @@
     `;
   }
 
-  const stepOf = (b) => (b.tracked || b.stock_item || isOneOff(b) ? 1 : 10);
+  const isBannerJob = (b) => b && !b.tracked && /banner|backdrop|roll-?up|stage/i.test([b.name, b.kind, b.material, b.format].join(" ")) && !/flyer|poster|voucher|brochure/i.test([b.name, b.kind, b.material].join(" "));
+  const stepOf = (b) => (b.tracked || b.stock_item || isOneOff(b) || isBannerJob(b) ? 1 : 10);
   // Digital assets are made once per event: a tick box, not a number of copies
   const isOneOff = (b) => b && b.category === "digital";
   const tickHTML = (b, on, locked) => `<button class="tick-pick ${on ? "on" : ""}" data-step="${on ? -1 : 1}" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""} aria-pressed="${on}">
@@ -834,9 +835,9 @@
             <img src="${esc(x.thumbnail)}" alt="" data-zoom="${esc(x.banner_id)}">
             <div><b>${esc(styleName(x))}</b><div class="muted" style="font-size:12px">${esc(x.format || "")} · ${esc(x.language || "")} · ${esc(x.version || "")}</div></div>
             ${ev ? `<div class="stepper" style="border:0;padding:0">
-              <button data-step="-10" data-id="${esc(x.banner_id)}" ${locked ? "disabled" : ""} aria-label="Fewer">−</button>
+              <button data-step="-${stepOf(x)}" data-id="${esc(x.banner_id)}" ${locked ? "disabled" : ""} aria-label="Fewer">−</button>
               <div style="text-align:center"><div class="q">${num(S.draft[x.banner_id])}</div><div class="avail">copies</div></div>
-              <button data-step="10" data-id="${esc(x.banner_id)}" ${locked ? "disabled" : ""} aria-label="More">+</button></div>` : ""}
+              <button data-step="${stepOf(x)}" data-id="${esc(x.banner_id)}" ${locked ? "disabled" : ""} aria-label="More">+</button></div>` : ""}
           </div>`).join("")}
         </div>
       </div>`;
@@ -887,9 +888,9 @@
         ${ev && !linkOf(b) && !isOneOff(b) ? `<div class="lb-section">
           <b>Copies for ${esc(ev.event_name)}</b>
           <div class="stepper" style="border:0;padding:0">
-            <button data-step="-10" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""}>−</button>
+            <button data-step="-${stepOf(b)}" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""}>−</button>
             <div class="q">${num(S.draft[b.banner_id])}</div>
-            <button data-step="10" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""}>+</button>
+            <button data-step="${stepOf(b)}" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""}>+</button>
           </div></div>` : ""}
         <div class="lb-section">
           <b>Used at events</b>
