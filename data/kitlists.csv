@@ -1,0 +1,182 @@
+event_id,group,day,timing,item,qty,item_ref
+EVT-009,Misc,,,Scissors/Stanley knife,2,MI-029
+EVT-009,Misc,,,Pens - nordic labs,200,MI-020
+EVT-009,Misc,,,Table Cloth - NH,4,MI-013
+EVT-009,Misc,,,Table Cloth - NL,3,MI-011
+EVT-009,Misc,,,Table Cloth - Smoothie,2,MI-014
+EVT-009,Misc,,,Table Cloth - dnalife,1,MI-012
+EVT-009,Misc,,,Bags - Paper,200,MI-018
+EVT-009,Misc,,,Paper cups for ginger shots,500,MI-032
+EVT-009,Misc,,,NL Request Sheets,30,MI-025
+EVT-009,Misc,,,Tape & gun,2,MI-031
+EVT-009,Misc,,,White lanyards,200,MI-023
+EVT-009,Misc,,,Blender,1,MI-035
+EVT-009,Misc,,,Blender Jug,2,MI-036
+EVT-009,Furniture / Display equipment,,,Floor brochure stand (floor brochure display stand),2,MI-001
+EVT-009,Furniture / Display equipment,,,Desk brochure stand,2,MI-002
+EVT-009,Furniture / Display equipment,,,Supps mini shelf,2,MI-007
+EVT-009,Furniture / Display equipment,,,Ladder Shelf Stands,2,MI-006
+EVT-009,Furniture / Display equipment,,,Podium table with NL artwork,2,MI-008
+EVT-009,Furniture / Display equipment,,,Table tops (table-top brochure display stand),2,MI-010
+EVT-009,Furniture / Display equipment,,,A4 sheet perspex display stand,5,MI-004
+EVT-009,Furniture / Display equipment,,,A3 sheet perspex display stand,5,MI-005
+EVT-009,Delegate things - registration etc,,,Register,1,
+EVT-009,Delegate things - registration etc,,,Name badges - delegate/ staff/ speaker/ blank,,EM-016
+EVT-009,Delegate things - registration etc,,,Time keeping signs,2,MI-027
+EVT-009,Delegate things - registration etc,,,Certificates,,EM-015
+EVT-009,Delegate things - registration etc,,,Holding Screen Graphics,,DA-002
+EVT-009,Delegate things - registration etc,,,A5 Webshop QR Code Poster / Flyer,,
+EVT-009,Delegate things - registration etc,,,Bell,2,MI-028
+EVT-009,Seat drops – in a labelled box per day,Day 1,START,Agenda - 1 at each desk,180,
+EVT-009,Seat drops – in a labelled box per day,Day 1,START,Nordic Notes,150,MI-043
+EVT-009,Seat drops – in a labelled box per day,Day 1,START,Folders,150,MI-024
+EVT-009,Seat drops – in a labelled box per day,Day 1,START,NEW Supplements Brochure,150,BR-055
+EVT-009,Seat drops – in a labelled box per day,Day 1,START,Pens - dnalife,200,MI-021
+EVT-009,Seat drops – in a labelled box per day,Day 1,START,Tote Bag,150,MI-019
+EVT-009,Seat drops – in a labelled box per day,Day 1,START,Additional Resources A5 flyer - one between 2,80,EM-013
+EVT-009,Seat drops – in a labelled box per day,Day 1,BREAK AM,Smoothie Brochure,200,BR-057
+EVT-009,Seat drops – in a labelled box per day,Day 1,BREAK AM,Autism Brochure - UPDATED,150,BR-001
+EVT-009,Seat drops – in a labelled box per day,Day 1,BREAK AM,DNA Mind Cheat Sheet,200,CL-012
+EVT-009,Seat drops – in a labelled box per day,Day 1,LUNCH,Organic Acids Chart,150,CL-105
+EVT-009,Seat drops – in a labelled box per day,Day 1,LUNCH,NeuroTransmitter (NEW) / MycoTox Prac Handout DOUBLE SIDED,150,CL-029
+EVT-009,Seat drops – in a labelled box per day,Day 1,BREAK PM,Offer sheets - DNA & Multi Test? TBC,,EM-005 EM-006 SO-001 SO-002
+EVT-009,Seat drops – in a labelled box per day,Day 2,START,DUTCH / GI-MAP Prac Handout DOUBLE SIDED,150,CL-022
+EVT-009,Seat drops – in a labelled box per day,Day 2,START,Steroid Pathway Chart,150,CL-106
+EVT-009,Seat drops – in a labelled box per day,Day 2,BREAK AM,NEW - DNA Hormones & DUTCH Case Studies,150,CL-116
+EVT-009,Seat drops – in a labelled box per day,Day 2,BREAK AM,DNA Gut Cheat sheet (already in folder),150,CL-004
+EVT-009,Seat drops – in a labelled box per day,Day 2,LUNCH,NEW - DNA Gut & GI MAP Case Studies,150,CL-117
+EVT-009,Seat drops – in a labelled box per day,Day 2,BREAK PM,NEW - PMDD test pairing/supps,150,CL-119 CL-177
+EVT-009,Seat drops – in a labelled box per day,Day 3,START,Feedback Form,150,EM-017
+EVT-009,Seat drops – in a labelled box per day,Day 3,LUNCH,Cardiometabolic Prac Handout,150,CL-015
+EVT-009,Seat drops – in a labelled box per day,Day 3,END OF DAY,VOUCHER 30% off one supps order - with CERTS,150,EM-014
+EVT-009,Seat drops – in a labelled box per day,Day 3,END OF DAY,Certificates,150,EM-015
+EVT-009,For tables,,,Folder packs - for ref. when talking  to pracs,10,MI-024
+EVT-009,All in same box,,,dnalife patient flyer - ENGLISH - for Europe,60,BR-027
+EVT-009,All in same box,,,NEW Supplements Brochure,50,BR-055
+EVT-009,All in same box,,,Lab Evals - Hormones/DUTCH & GI MAP/DNA Gut,60,BR-010
+EVT-009,All in same box,,,DUTCH Supplement Guide,60,CL-172
+EVT-009,All in same box,,,ITL Health - Flyer,75 (150),BR-061
+EVT-009,A3 Posters,,,Poster 1 - Why choose Dnalife,1,PO-011
+EVT-009,A3 Posters,,,Poster 1 Supps Offer sheet,2,SO-015-POSTER
+EVT-009,A3 Posters,,,poster 3 - Test Offer Sheet,2,EM-005 EM-006 SO-001-POSTER SO-002-POSTER
+EVT-009,A3 Posters,,,poster 4 - DNA Mind training & DNA Offer,2,PO-005
+EVT-009,A4 Posters,,,Ferment,1,PO-022
+EVT-009,A4 Posters,,,Bone Broth,1,PO-021
+EVT-009,A4 Posters,,,Ginger Shot,1,PO-019
+EVT-009,A4 Posters,,,Olive Oil,1,PO-020
+EVT-009,A4 Posters,,,Supps offer sheet,1,SO-015-POSTER
+EVT-009,Sample Reports,,,DNA Sample Report Folders,3,MI-015 MI-037
+EVT-009,Sample Reports,,,Functional Sample Report Folders,3,MI-016 MI-038
+EVT-009,Sample Reports,,,DNA Gut,5,CL-161
+EVT-009,Sample Reports,,,DNA Mind,5,CL-146
+EVT-009,Sample Reports,,,DNA Core,5,CL-160
+EVT-009,Special Offers / Event Sign Ups / Flyers,,,NH product sales + Other Products - EURO,150,SO-015
+EVT-009,Special Offers / Event Sign Ups / Flyers,,,DNA Mind test offer - EURO,150,PO-005
+EVT-009,Special Offers / Event Sign Ups / Flyers,,,Other Test offers - EURO & DKK,150,EM-005 EM-006
+EVT-009,Banners,,,Branded Event,3,BN-125
+EVT-009,Banners,,,Supps table banners,2,
+EVT-009,Banners,,,Big Back Lit Banner,1,BN-137
+EVT-009,Banners,,,logo banner - metal frame,1,BN-140
+EVT-009,Banners,,,Small back-lit banner - DNA COre DNA Gut,1,BN-136 BN-135
+EVT-009,Banners,,,Small back lit banner - all DNA - About dnalife,1,BN-133
+EVT-009,Banners,,,"Optimise Health & Longevity - DNA Mind, DNA Gut, GI MAP, OMX",1,BN-081
+EVT-009,Banners,,,Comprehensive Hormones,1,BN-082
+EVT-009,Banners,,,GI MAP,1,BN-018
+EVT-009,Banners,,,DUTCH,1,BN-015
+EVT-009,Banners,,,DNA All tests,1,BN-079
+EVT-009,Banners,,,DNA Core,1,BN-076
+EVT-009,Banners,,,Growbaby,1,BN-008
+EVT-009,Banners,,,DNA Gut,1,BN-078
+EVT-009,Banners,,,DNA Hormones,1,BN-075
+EVT-009,Banners,,,DNA Mind,1,BN-004
+EVT-009,Banners,,,Supplement NEW 1 - 4 to a banner,1,BN-053
+EVT-009,Banners,,,Supplement NEW 2 - 4 to a banner,1,BN-054
+EVT-009,Banners,,,FuFu1,1,BN-047
+EVT-009,Banners,,,FuFu2,1,BN-048
+EVT-008,Misc,,,Scissors/Stanley knife,1,MI-029 MI-030
+EVT-008,Misc,,,Tape & gun,1,MI-031
+EVT-008,Misc,,,NL table cloth,2,MI-011
+EVT-008,Misc,,,NH table cloth,2,MI-013
+EVT-008,Misc,,,Smoothie table cloth,1,MI-014
+EVT-008,Misc,,,dnalife table cloth,1,MI-012
+EVT-008,Misc,,,Bags - Paper,80,MI-018
+EVT-008,Misc,,,Paper cups for ginger shots etc,200,MI-032
+EVT-008,Misc,,,NL Request Sheets,10,MI-025
+EVT-008,Misc,,,White lanyards,100,MI-023
+EVT-008,Misc,,,Blender,1,MI-035
+EVT-008,Misc,,,Blender Jug,1,MI-036
+EVT-008,Misc,,,Knives,1,MI-039
+EVT-008,Misc,,,Chopping board,1,MI-040
+EVT-008,Misc,,,Screen Graphics,1,DA-002
+EVT-008,Misc,,,Bell,1,MI-028
+EVT-008,Misc,,,Presentation LapTop,1,MI-041
+EVT-008,Misc,,,Camera Lens,1,MI-042
+EVT-008,Furniture / Display equipment,,,Desk brochure stand,2,MI-002
+EVT-008,Furniture / Display equipment,,,Supps mini shelf,2,MI-007
+EVT-008,Furniture / Display equipment,,,A4 sheet perspex display stand,3,MI-004
+EVT-008,Furniture / Display equipment,,,A3 sheet perspex display stand,2,MI-005
+EVT-008,Delegate things - registration etc,,,Register,1,
+EVT-008,Delegate things - registration etc,,,Name badges - delegate/ staff/ speaker/ blank,,EM-026
+EVT-008,Delegate things - registration etc,,,Time keeping signs,1,MI-027
+EVT-008,Delegate things - registration etc,,,Agenda - 1 at each desk,80,
+EVT-008,Delegate things - registration etc,,,Certificates,80,EM-022
+EVT-008,Delegate things - registration etc,,,Feedback forms,80,EM-023
+EVT-008,Seat drops – in a labelled box per day,Day 1,FIRST THING,Pens,80,MI-020
+EVT-008,Seat drops – in a labelled box per day,Day 1,FIRST THING,Tote Bag,80,MI-019
+EVT-008,Seat drops – in a labelled box per day,Day 1,FIRST THING,Nordic Notes,80,MI-043
+EVT-008,Seat drops – in a labelled box per day,Day 1,FIRST THING,Additional Resources A5 flyer,20,EM-020
+EVT-008,Seat drops – in a labelled box per day,Day 1,MAKE THESE UP,Folders containing the 4 items below,80,MI-024
+EVT-008,Seat drops – in a labelled box per day,Day 1,IN FOLDER,About Nordic Brochure: GERMAN,80,BR-038
+EVT-008,Seat drops – in a labelled box per day,Day 1,IN FOLDER,Non-Invasive Brochure: ENGLISH,80,BR-009
+EVT-008,Seat drops – in a labelled box per day,Day 1,IN FOLDER,Supps Brochure: GERMAN,80,BR-056
+EVT-008,Seat drops – in a labelled box per day,Day 1,IN FOLDER,DNA Patient Flyer: GERMAN,80,BR-030
+EVT-008,Seat drops – in a labelled box per day,Day 1,LOOSE ON DESK,DNA Gut Cheat Sheet: GERMAN,80,CL-006
+EVT-008,Seat drops – in a labelled box per day,Day 1,DURING DEMO,Nordic Smoothie - hand out during demo,80,BR-058
+EVT-008,Seat drops – in a labelled box per day,Day 1,DURING BREAK,GI MAP Prac Handout: GERMAN,80,CL-025
+EVT-008,Seat drops – in a labelled box per day,Day 1,DURING BREAK,Gut Supps hand out - prob won't get done in time...,80,
+EVT-008,Seat drops – in a labelled box per day,Day 1,LUNCH,OAT Prac Handout: GERMAN,80,CL-031
+EVT-008,Seat drops – in a labelled box per day,Day 1,LUNCH,Organic Acids Chart (krebs neuro urea cycles) - new,80,CL-105
+EVT-008,Seat drops – in a labelled box per day,Day 1,LUNCH,NEW DNA Mind Cheat Sheet: GERMAN,80,CL-013
+EVT-008,Seat drops – in a labelled box per day,Day 2,FIRST THING,DUTCH - PRAC Hand out - GERMAN,80,CL-020
+EVT-008,Seat drops – in a labelled box per day,Day 2,FIRST THING,DUTCH - Steroid pathway chart current version approved A3,80,CL-106
+EVT-008,Seat drops – in a labelled box per day,Day 2,FIRST THING,DNA Hormones Cheat Sheet: GERMAN,80,CL-010
+EVT-008,Seat drops – in a labelled box per day,Day 2,BREAK,Growbaby Brochure: GERMAN,80,BR-007
+EVT-008,Seat drops – in a labelled box per day,Day 2,BREAK,Vaginal Microbiome Prac Handout: GERMAN - Salient Bio,80,CL-039
+EVT-008,Seat drops – in a labelled box per day,Day 2,LUNCH,Vaginal Microbiome Prac Handout: GERMAN - Tiny Health,80,CL-038
+EVT-008,Seat drops – in a labelled box per day,Day 2,LUNCH,Feedback Form,80,EM-023
+EVT-008,Seat drops – in a labelled box per day,Day 2,LUNCH,Hormones Supps handout,80,CL-172
+EVT-008,Seat drops – in a labelled box per day,Day 2,END OF DAY,VOUCHER 30% off one supps order - give with certs,27x3 = 81,EM-021
+EVT-008,Seat drops – in a labelled box per day,Day 2,END OF DAY,Certificates,80,EM-022
+EVT-008,For tables,,,About Nordic Brochure: GERMAN,20,BR-038
+EVT-008,For tables,,,Supps Brochure: GERMAN,20,BR-056
+EVT-008,For tables,,,DNA Patient Flyer: GERMAN,50,BR-030
+EVT-008,For tables,,,Bone Broth / Ginger Shots flyer - English,30,EM-145
+EVT-008,A3 & A4 Posters,,,Poster 1 - Why choose Dnalife,1,PO-012
+EVT-008,A3 & A4 Posters,,,poster 2 - Supps Offer sheet,1,SO-021-POSTER
+EVT-008,A3 & A4 Posters,,,poster 3 - Ginger Shot - German,1,PO-025
+EVT-008,A3 & A4 Posters,,,poster 4 - Olive Oil - German,1,PO-026
+EVT-008,A3 & A4 Posters,,,poster 4 - Ferment - German,1,PO-028
+EVT-008,A3 & A4 Posters,,,poster 4 - Bone Broth - German,1,PO-027
+EVT-008,Sample Reports,,,DNA Sample Report Folders - German,1,MI-015 MI-037
+EVT-008,Sample Reports,,,Functional Sample Report Folders,1,MI-016 MI-038
+EVT-008,Sample Reports,,,DNA Gut - German,5,
+EVT-008,Special Offers / Event Sign Ups / Flyers,,,NH product sales + Other Products - flyer with QR code EURO,150,SO-021
+EVT-008,Special Offers / Event Sign Ups / Flyers,,,Test Price list in EURO,80,PL-003
+EVT-008,Banners,,,Branded Event,2,BN-126
+EVT-008,Banners,,,Back Lit Banners,2,
+EVT-008,Banners,,,About Nordic -- order Genetic & Functional Tests IN GERMAN,1,BN-093
+EVT-008,Banners,,,DNA Gut - GERMAN,1,BN-091
+EVT-008,Banners,,,DNA Hormones - GERMAN,1,BN-090
+EVT-008,Banners,,,DNA Health - GERMAN,1,BN-089
+EVT-008,Banners,,,Growbaby,1,BN-008
+EVT-008,Banners,,,GI MAP,1,BN-018
+EVT-008,Banners,,,Smoothie 1,1,BN-055
+EVT-008,Banners,,,Smoothie 2,1,BN-056
+EVT-008,Banners,,,Supplement - ALL - no description,1,BN-052
+EVT-008,Banners,,,DNA All tests,1,BN-025
+EVT-008,Banners,,,Old German smoothie??,1,
+EVT-008,Banners,,,DNA Core,1,BN-005
+EVT-008,Banners,,,"Optimise Health & Longevity - DNA, GI MAP, OMX",1,
+EVT-008,Banners,,,Comprehensive Hormones - DUTCH DNA Hormones GI MAP,1,BN-019
+EVT-008,Banners,,,Supplement NEW 1,1,BN-053
+EVT-008,Banners,,,Supplement NEW 2,1,BN-054

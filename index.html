@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Event Materials</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="images/brand/nordic-labs.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-mark" src="images/brand/nordic-labs.png" alt="Nordic Laboratories">
+      <div>
+        <div class="brand-title" id="site-title">Event Materials</div>
+        <div class="brand-sub" id="site-sub"></div>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" data-view="catalogue">Catalogue</button>
+      <button class="tab" data-view="events">Events</button>
+      <button class="tab" data-view="warehouse">Warehouse</button>
+      <button class="tab" data-view="reports">Reports <span class="tab-badge" id="ideas-badge" hidden title="Design jobs still to make"></span></button>
+    </nav>
+    <div class="mode" id="mode-badge"></div>
+  </header>
+
+  <main id="view"></main>
+
+  <!-- Planning tray (shown when an event is being planned) -->
+  <aside class="tray" id="tray" hidden></aside>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lb-close" data-lb="close" aria-label="Close">×</button>
+    <button class="lb-nav lb-prev" data-lb="prev" aria-label="Previous">‹</button>
+    <button class="lb-nav lb-next" data-lb="next" aria-label="Next">›</button>
+    <div class="lb-body" id="lb-body"></div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <div id="print-area"></div>
+
+  <script src="config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
