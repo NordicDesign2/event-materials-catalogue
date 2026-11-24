@@ -735,7 +735,8 @@
     return `<div class="day-drop-bar">
       <div class="day-drop-hint">📦 <b>Day boxes</b> – drag a row from the list onto the day it's needed, or use the Day menu on the row. Items with no day can stay as they are.</div>
       <div class="day-drops">${boxes.map((d) => { const chips = dayChips(rows, d), units = chips.reduce((a, c) => a + c.q, 0);
-        return `<div class="day-drop ${d ? "" : "unassigned"}" data-dbox="${d}"><b>${d ? `Day ${d}` : "No day yet"}</b><span>${chips.length} item${chips.length === 1 ? "" : "s"}${units ? ` · ${units} pcs` : ""}</span></div>`; }).join("")}</div></div>`;
+        return `<div class="day-drop" data-dbox="${d}"><div class="dd-h"><b>Day ${d}</b><span>${chips.length ? `${chips.length} item${chips.length === 1 ? "" : "s"} · ${units} pcs` : "Drop items here"}</span></div>
+          ${chips.length ? `<div class="dd-list">${chips.map((c) => `<div class="dd-i" data-zoom="${esc(c.r.banner_id)}" title="${esc(isDesign(c.r.b) ? designLabel(c.r.b) : c.r.b.name)}">${c.r.b.thumbnail ? `<img src="${esc(imgSrc(c.r.b))}" alt="" loading="lazy">` : `<span class="ph"></span>`}<span class="n">${esc(isDesign(c.r.b) ? designLabel(c.r.b) : c.r.b.name)}</span><b>× ${c.q}</b></div>`).join("")}</div>` : ""}</div>`; }).join("")}</div></div>`;
   }
   async function setRowDay(evId, id, day) {
     try { await act({ action: "setBookingDay", event_id: evId, banner_id: id, day: day || "" }); render(); } catch (err) { toast(err.message, true); }
