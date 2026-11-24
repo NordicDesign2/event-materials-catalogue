@@ -351,6 +351,34 @@
   const isClosed = (e) => (CFG.closedStatuses || []).includes(e.status) || (e.end_date && e.end_date < today() && eventStatus(e.event_id) !== "Dispatched");
 
   // "+ New event" is available everywhere: header, catalogue plan bar and the Events page
+  // Event plan: everything on an event's list, split into what happens before the event and what goes to each day
+  function evPlanPanel(evId) {
+    const ev = evById(evId), n = daysOf(ev);
+    const rows = S.bookings.filter((b) => b.event_id === evId).map((r) => ({ ...r, b: byId(r.banner_id) || { banner_id: r.banner_id, name: r.banner_id } }));
+    const jobs = jobRows().filter((j) => j.event_id === evId), jobOf = (id) => jobs.find((j) => String(j.related_items || "").split(/[,\s]+/).includes(id));
+    S.lbList = rows.map((r) => r.banner_id);
+    const nm = (b) => (isDesign(b) ? designLabel(b) : b.name);
+    const line = (r, q, extra) => { const j = jobOf(r.banner_id);
+      return `<div class="ep-i" data-zoom="${esc(r.banner_id)}">${thumbHTML(r.b)}<div><b>${esc(nm(r.b))}</b><div class="muted">${esc([isOneOff(r.b) ? r.b.section || "Digital asset" : isDesign(r.b) ? "Design team makes it" : r.b.tracked ? (r.b.stored_at || "") : "Print run", extra].filter(Boolean).join(" · "))}</div></div>
+        <span class="ep-q">${isOneOff(r.b) ? "" : "× " + q}</span>${j ? `<span class="pill ${j.status === "Done" ? "good" : j.status === "In design" ? "warn" : ""}">${esc(jobLabel(j.status))}</span>` : ""}</div>`; };
+    const pre = rows.filter((r) => isOneOff(r.b) || r.day === "pre");
+    const daysRows = (d) => rows.flatMap((r) => { if (isOneOff(r.b) || r.day === "pre") return []; const v = r.day || "";
+      if (isSplit(v)) { const m = parseSplit(v); return num(m[d]) > 0 ? [[r, num(m[d]), "split"]] : []; } return v === d ? [[r, num(r.qty)]] : []; });
+    const noDay = rows.filter((r) => !isOneOff(r.b) && r.day !== "pre" && (!r.day || (isSplit(r.day) && Object.values(parseSplit(r.day)).reduce((a, q) => a + num(q), 0) < num(r.qty))))
+      .map((r) => [r, isSplit(r.day) ? num(r.qty) - Object.values(parseSplit(r.day)).reduce((a, q) => a + num(q), 0) : num(r.qty)]);
+    const runup = S.banners.filter((b) => b.category === "digital" && b.event_id === evId);
+    const sec = (title, sub, body, cls = "") => `<div class="ep-sec ${cls}"><div class="ep-h">${title}<span>${sub}</span></div>${body || `<div class="muted" style="padding:6px 2px">Nothing here yet.</div>`}</div>`;
+    return `<div class="panel kit-panel ev-plan" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+        <div><h2 style="margin:0">🗓 Event plan – ${esc(ev.event_name)}</h2><div class="muted">${fmtDate(ev.start_date)}${ev.end_date && ev.end_date !== ev.start_date ? " – " + fmtDate(ev.end_date) : ""}${ev.city ? " · " + esc(ev.city) : ""} · Ship by ${fmtDate(ev.ship_by) || "—"}</div></div>
+        <div style="display:flex;gap:6px"><button class="btn small" data-act="plan" data-id="${esc(evId)}">Edit materials</button><button class="btn small" data-act="to-warehouse" data-id="${esc(evId)}">Warehouse</button><button class="btn small" data-act="show-evplan" data-id="${esc(evId)}">Close</button></div></div>
+      <div class="ep-cols">
+        <div>${sec("🗓 Before the event", "Run-up, digital and anything sent or made ahead", pre.map((r) => line(r, r.qty)).join("") + (runup.length && !pre.some((r) => r.b.category === "digital") ? `<div class="muted" style="margin-top:6px">${runup.length} digital assets were made for this event – <a href="#" data-act="show-runup" data-id="${esc(evId)}">see the run-up</a>.</div>` : ""), "pre")}
+          ${jobs.length ? sec("🎨 Design jobs", `${jobs.filter((j) => ["New", "In design"].includes(j.status)).length} still to make`, jobs.map((j) => `<div class="ep-i">${j.src ? thumbHTML(j.src) : "<span></span>"}<div><b>${esc(j.src && j.src.material ? j.src.material : j.title)}</b><div class="muted">${j.due ? "Needed by " + fmtDate(j.due) : ""}</div></div><span></span><span class="pill ${j.status === "Done" ? "good" : j.status === "In design" ? "warn" : ""}">${esc(jobLabel(j.status))}</span></div>`).join("")) : ""}</div>
+        <div>${noDay.length ? sec("📦 Whole event / no day set", `${noDay.length} item${noDay.length > 1 ? "s" : ""}`, noDay.map(([r, q]) => line(r, q)).join("")) : ""}
+          ${Array.from({ length: n }, (_, i) => String(i + 1)).map((d) => { const l = daysRows(d); return sec(`📦 Day ${d}`, l.length ? `${l.length} item${l.length > 1 ? "s" : ""} · ${l.reduce((a, x) => a + x[1], 0)} pcs` : "", l.map(([r, q, x]) => line(r, q, x === "split" ? "part of a split" : "")).join("")); }).join("")}</div>
+      </div></div>`;
+  }
   // Digital run-up: an event's digital assets in the order they went out (month from the artwork date)
   function runupPanel(evId) {
     const e = evById(evId), list = S.banners.filter((b) => b.category === "digital" && b.event_id === evId).sort((a, z) => String(a.version).localeCompare(String(z.version)) || String(a.banner_id).localeCompare(String(z.banner_id)));
@@ -710,15 +738,15 @@
 
   // Days of an event (1 for a one-day event, at most 7), for sorting materials into day boxes
   const daysOf = (ev) => { if (!ev || !ev.start_date) return 3; if (!ev.end_date) return 3; const a = new Date(ev.start_date), z = new Date(ev.end_date || ev.start_date); const n = Math.round((z - a) / 864e5) + 1; return isNaN(n) ? 1 : Math.max(1, Math.min(7, n)); };
-  const dayLabel = (d) => (d === "SPLIT" ? "Split across days" : d ? "Day " + d : "Whole event / set-up");
+  const dayLabel = (d) => (d === "SPLIT" ? "Split across days" : d === "pre" ? "Before the event" : d ? "Day " + d : "Whole event / set-up");
   // A day value is "" (whole event), "2" (one day) or "split:1=50,2=50" (some on each day)
   const isSplit = (v) => /^split:/.test(v || "");
   const parseSplit = (v) => Object.fromEntries(String(v || "").replace(/^split:/, "").split(",").filter(Boolean).map((x) => x.split("=")).map(([d, q]) => [d, num(q)]));
   const makeSplit = (m) => "split:" + Object.entries(m).filter(([, q]) => num(q) > 0).sort((a, z) => num(a[0]) - num(z[0])).map(([d, q]) => d + "=" + num(q)).join(",");
-  const dayText = (v) => (!v ? "" : isSplit(v) ? Object.entries(parseSplit(v)).map(([d, q]) => `Day ${d}: ${q}`).join(" · ") : `Day ${v} box`);
+  const dayText = (v) => (!v ? "" : v === "pre" ? "Before the event" : isSplit(v) ? Object.entries(parseSplit(v)).map(([d, q]) => `Day ${d}: ${q}`).join(" · ") : `Day ${v} box`);
   const daySelect = (b, ev, locked) => { const n = daysOf(ev), cur = (S.draftDay || {})[b.banner_id] || "", sp = isSplit(cur), m = sp ? parseSplit(cur) : {};
     return `<select class="day-sel" data-day="${esc(b.banner_id)}" ${locked ? "disabled" : ""} aria-label="Which day">
-      <option value="">Whole event</option>${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${cur === String(i + 1) ? "selected" : ""}>Day ${i + 1}</option>`).join("")}
+      <option value="pre" ${cur === "pre" ? "selected" : ""}>Before the event</option><option value="">Whole event</option>${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${cur === String(i + 1) ? "selected" : ""}>Day ${i + 1}</option>`).join("")}
       ${n > 1 ? `<option value="split" ${sp ? "selected" : ""}>Split across days…</option>` : ""}</select>
       ${sp ? `<div class="split-days">${Array.from({ length: n }, (_, i) => `<label>Day ${i + 1}<input type="number" min="0" value="${num(m[i + 1])}" data-split="${esc(b.banner_id)}" data-d="${i + 1}" ${locked ? "disabled" : ""}></label>`).join("")}</div>` : ""}`; };
 
@@ -731,11 +759,11 @@
       return v === d ? [{ r, q: num(r.qty) }] : []; });
   }
   function dayBoard(ev, rows, locked) {
-    const n = daysOf(ev), boxes = Array.from({ length: n }, (_, i) => String(i + 1));
+    const n = daysOf(ev), boxes = ["pre", ...Array.from({ length: n }, (_, i) => String(i + 1))];
     return `<div class="day-drop-bar">
       <div class="day-drop-hint">📦 <b>Day boxes</b> – drag a row from the list onto the day it's needed, or use the Day menu on the row. Items with no day can stay as they are.</div>
       <div class="day-drops">${boxes.map((d) => { const chips = dayChips(rows, d), units = chips.reduce((a, c) => a + c.q, 0);
-        return `<div class="day-drop" data-dbox="${d}"><div class="dd-h"><b>Day ${d}</b><span>${chips.length ? `${chips.length} item${chips.length === 1 ? "" : "s"} · ${units} pcs` : "Drop items here"}</span></div>
+        return `<div class="day-drop ${d === "pre" ? "pre" : ""}" data-dbox="${d}"><div class="dd-h"><b>${d === "pre" ? "Before the event" : `Day ${d}`}</b><span>${chips.length ? `${chips.length} item${chips.length === 1 ? "" : "s"} · ${units} pcs` : "Drop items here"}</span></div>
           ${chips.length ? `<div class="dd-list">${chips.map((c) => `<div class="dd-i" data-zoom="${esc(c.r.banner_id)}" title="${esc(isDesign(c.r.b) ? designLabel(c.r.b) : c.r.b.name)}">${c.r.b.thumbnail ? `<img src="${esc(imgSrc(c.r.b))}" alt="" loading="lazy">` : `<span class="ph"></span>`}<span class="n">${esc(isDesign(c.r.b) ? designLabel(c.r.b) : c.r.b.name)}</span><b>× ${c.q}</b></div>`).join("")}</div>` : ""}</div>`; }).join("")}</div></div>`;
   }
   async function setRowDay(evId, id, day) {
@@ -744,7 +772,7 @@
   const whDaySelect = (ev, r) => { const n = daysOf(ev), v = r.day || "", sp = isSplit(v) || (S.whSplit || {})[r.banner_id], m = isSplit(v) ? parseSplit(v) : v ? { [v]: num(r.qty) } : {};
     const used = Object.values(m).reduce((a, q) => a + num(q), 0);
     return `<select class="day-sel" data-whday="${esc(r.banner_id)}" aria-label="Day box">
-      <option value="">No day</option>${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${!sp && v === String(i + 1) ? "selected" : ""}>Day ${i + 1}</option>`).join("")}
+      <option value="">No day</option><option value="pre" ${!sp && v === "pre" ? "selected" : ""}>Before the event</option>${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${!sp && v === String(i + 1) ? "selected" : ""}>Day ${i + 1}</option>`).join("")}
       ${n > 1 ? `<option value="split" ${sp ? "selected" : ""}>Split across days…</option>` : ""}</select>
       ${sp ? `<div class="split-days">${Array.from({ length: n }, (_, i) => `<label>Day ${i + 1}<input type="number" min="0" value="${num(m[i + 1])}" data-whsplit="${esc(r.banner_id)}" data-d="${i + 1}"></label>`).join("")}
         <div class="split-left ${used === num(r.qty) ? "ok" : used > num(r.qty) ? "bad" : ""}">${used} of ${num(r.qty)} placed${used < num(r.qty) ? ` · ${num(r.qty) - used} with no day` : used > num(r.qty) ? " – more than are being sent" : " ✓"}</div></div>` : ""}`; };
@@ -781,10 +809,10 @@
         ${items.length ? [...(() => { const n = daysOf(ev); const dd = (x) => { const v = (S.draftDay || {})[x.b.banner_id] || ""; return isSplit(v) ? "SPLIT" : v; };
             const phys = items.filter((x) => !isDesign(x.b) || (!isOneOff(x.b) && dd(x)));
             if (!phys.some(dd)) return [["", phys]];
-            return ["", ...Array.from({ length: n }, (_, i) => String(i + 1)), ...(phys.some((x) => dd(x) === "SPLIT") ? ["SPLIT"] : [])].map((d) => [`DAY:${d}`, phys.filter((x) => dd(x) === d)]).filter(([t, l]) => l.length || t !== "DAY:"); })(),
-            ["🎨 For the design team to make", items.filter((x) => isDesign(x.b) && !(!isOneOff(x.b) && (S.draftDay || {})[x.b.banner_id]))]].filter(([t, l]) => l.length || String(t).startsWith("DAY:")).map(([title, list]) => `${String(title).startsWith("DAY:") ? (() => { const d = title.slice(4); const sp = d && d !== "SPLIT" ? items.filter((x) => isSplit((S.draftDay || {})[x.b.banner_id]) && num(parseSplit(S.draftDay[x.b.banner_id])[d]) > 0) : [];
+            return [...(phys.some((x) => dd(x) === "pre") ? ["pre"] : []), "", ...Array.from({ length: n }, (_, i) => String(i + 1)), ...(phys.some((x) => dd(x) === "SPLIT") ? ["SPLIT"] : [])].map((d) => [`DAY:${d}`, phys.filter((x) => dd(x) === d)]).filter(([t, l]) => l.length || t !== "DAY:"); })(),
+            ["🎨 For the design team to make", items.filter((x) => isDesign(x.b) && !(!isOneOff(x.b) && (S.draftDay || {})[x.b.banner_id]))]].filter(([t, l]) => l.length || String(t).startsWith("DAY:")).map(([title, list]) => `${String(title).startsWith("DAY:") ? (() => { const d = title.slice(4); const sp = d && d !== "SPLIT" && d !== "pre" ? items.filter((x) => isSplit((S.draftDay || {})[x.b.banner_id]) && num(parseSplit(S.draftDay[x.b.banner_id])[d]) > 0) : [];
               const bits = [list.length ? list.length + " item" + (list.length > 1 ? "s" : "") : "", sp.length ? `+ from split items: ${sp.map((x) => `${num(parseSplit(S.draftDay[x.b.banner_id])[d])} × ${x.b.name}`).join(", ")}` : ""].filter(Boolean);
-              return `<div class="tray-group day">📦 ${esc(dayLabel(d))}<span>${esc(bits.join(" ") || "Nothing yet – choose this day on any item")}</span></div>`; })() : title ? `<div class="tray-group design">${title}<span>Not picked by the warehouse – a design request is sent when you save</span></div>` : ""}${list.map(({ b, q }) => {
+              return `<div class="tray-group day ${d === "pre" ? "pre" : ""}">${d === "pre" ? "🗓" : "📦"} ${esc(dayLabel(d))}<span>${esc(bits.join(" ") || "Nothing yet – choose this day on any item")}</span></div>`; })() : title ? `<div class="tray-group design">${title}<span>Not picked by the warehouse – a design request is sent when you save</span></div>` : ""}${list.map(({ b, q }) => {
           const c = committedElsewhere(b.banner_id, ev.event_id);
           const free = b.qty_owned - c.qty;
           const warn = b.tracked && !locked && q > free ? `Only ${Math.max(0, free)} free${c.events.length ? " – also on " + c.events.join(", ") : ""}` : "";
@@ -999,6 +1027,7 @@
         <div><h1>Events</h1><div class="muted">${LIVE ? "Events live in the Events tab of the Google Sheet – edit them there or add one here." : "Demo mode – events come from data/events.csv. New ones are saved in this browser."}</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="toggle-request">📨 Request an event</button><button class="btn primary" data-act="toggle-new-event">+ New event</button></div>
       </div>
+      ${S.evPlan && evById(S.evPlan) ? evPlanPanel(S.evPlan) : ""}
       ${S.runupEvent && evById(S.runupEvent) ? runupPanel(S.runupEvent) : ""}
       ${S.kitEvent && evById(S.kitEvent) ? `<div class="panel kit-panel" style="margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
@@ -1091,6 +1120,7 @@
       ${rows.length ? `<div class="strip">${rows.slice(0, 12).map((r) => thumbHTML(byId(r.banner_id) || {})).join("")}</div><div class="muted">${rows.length} designs · ${units} banners${archive && st === "Returned" ? (lost ? ` · <b style="color:var(--bad)">${lost} damaged/missing</b>` : " · all returned") : ""}</div>` : archive && !e.featured_items ? `<div class="muted">No materials recorded</div>` : ""}
       ${e.notes ? `<div class="muted" style="font-size:12px">${esc(e.notes)}</div>` : ""}
       ${(() => { const k = (S.kits || []).filter((x) => x.event_id === e.event_id); return k.length ? `<button class="btn small kit-btn" data-act="show-kit" data-id="${esc(e.event_id)}">📋 Full kit list · ${k.length} lines</button>` : ""; })()}
+      ${rows.length || S.ideas.some((j) => j.event_id === e.event_id) ? `<button class="btn small kit-btn plan-btn" data-act="show-evplan" data-id="${esc(e.event_id)}">🗓 Event plan – before &amp; at the event</button>` : ""}
       ${(() => { const d = S.banners.filter((b) => b.category === "digital" && b.event_id === e.event_id); return d.length ? `<button class="btn small kit-btn" data-act="show-runup" data-id="${esc(e.event_id)}">📱 Digital run-up · ${d.length} assets</button>` : ""; })()}
       ${(() => { const made = collapsePrint(S.banners.filter((b) => b.category === "pastevents" && b.event_id === e.event_id)); return made.length ? `<button class="made" data-act="show-made" data-id="${esc(e.event_id)}">
         <span class="made-strip">${made.slice(0, 6).map((b) => `<img src="${esc(b.thumbnail)}" alt="" loading="lazy">`).join("")}</span>
@@ -1476,6 +1506,7 @@
         const rows = a === "export-plan" ? Object.entries(S.draft).filter(([, q]) => num(q) > 0).map(([id, q]) => { const b = byId(id) || {}; const ev = evById(eid) || {}; return { event_id: eid, event_name: ev.event_name, ship_by: ev.ship_by, category: b.tracked === false ? ({ posters: "Poster", brochures: "Brochure / flyer", clinical: "Clinical handout / guide", pricelists: "Price list", pastevents: "Past event material" })[b.category] || "Special offer form" : "Banner", banner_id: id, banner_name: b.name, language: b.language, brand: b.brand, banner_type: b.banner_type, stored_at: b.stored_at, qty: num(q), status: S.dirty ? "Unsaved" : eventStatus(eid) }; }) : eventRows(eid);
         download(`banners_${eid}.csv`, toCSV(rows, EVENT_COLS));
       }
+      else if (a === "show-evplan") { S.evPlan = S.evPlan === el.dataset.id ? "" : el.dataset.id; S.kitEvent = ""; S.runupEvent = ""; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
       else if (a === "show-runup") { S.runupEvent = S.runupEvent === el.dataset.id ? "" : el.dataset.id; S.kitEvent = ""; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
       else if (a === "show-kit") { S.kitEvent = S.kitEvent === el.dataset.id ? "" : el.dataset.id; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
       else if (a === "print-kit") { const ev = evById(S.kitEvent); printHTML(`Kit list – ${ev.event_name}`, kitTable(S.kitEvent, true)); }
