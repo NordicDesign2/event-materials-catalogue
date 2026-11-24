@@ -740,10 +740,13 @@
   async function setRowDay(evId, id, day) {
     try { await act({ action: "setBookingDay", event_id: evId, banner_id: id, day: day || "" }); render(); } catch (err) { toast(err.message, true); }
   }
-  const whDaySelect = (ev, r) => { const n = daysOf(ev), v = r.day || "";
+  const whDaySelect = (ev, r) => { const n = daysOf(ev), v = r.day || "", sp = isSplit(v) || (S.whSplit || {})[r.banner_id], m = isSplit(v) ? parseSplit(v) : v ? { [v]: num(r.qty) } : {};
+    const used = Object.values(m).reduce((a, q) => a + num(q), 0);
     return `<select class="day-sel" data-whday="${esc(r.banner_id)}" aria-label="Day box">
-      <option value="">No day</option>${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${v === String(i + 1) ? "selected" : ""}>Day ${i + 1}</option>`).join("")}
-      ${isSplit(v) ? `<option value="__split" selected>${esc(dayText(v))}</option>` : ""}</select>`; };
+      <option value="">No day</option>${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${!sp && v === String(i + 1) ? "selected" : ""}>Day ${i + 1}</option>`).join("")}
+      ${n > 1 ? `<option value="split" ${sp ? "selected" : ""}>Split across days…</option>` : ""}</select>
+      ${sp ? `<div class="split-days">${Array.from({ length: n }, (_, i) => `<label>Day ${i + 1}<input type="number" min="0" value="${num(m[i + 1])}" data-whsplit="${esc(r.banner_id)}" data-d="${i + 1}"></label>`).join("")}
+        <div class="split-left ${used === num(r.qty) ? "ok" : used > num(r.qty) ? "bad" : ""}">${used} of ${num(r.qty)} placed${used < num(r.qty) ? ` · ${num(r.qty) - used} with no day` : used > num(r.qty) ? " – more than are being sent" : " ✓"}</div></div>` : ""}`; };
   async function moveDay(evId, id, from, to) {
     if (from === to) return;
     const bk = S.bookings.find((b) => b.event_id === evId && b.banner_id === id); if (!bk) return;
@@ -1605,7 +1608,16 @@
   document.addEventListener("dragover", (e) => { const b = e.target.closest && e.target.closest("[data-dbox]"); if (!b || !S.drag) return; e.preventDefault(); document.querySelectorAll(".day-drop.over").forEach((x) => x !== b && x.classList.remove("over")); b.classList.add("over"); });
   document.addEventListener("drop", (e) => { const b = e.target.closest && e.target.closest("[data-dbox]"); if (!b || !S.drag) return; e.preventDefault();
     const d = S.drag; S.drag = null; document.body.classList.remove("is-dragging"); setRowDay(S.whEvent, d.id, b.dataset.dbox); });
-  document.addEventListener("change", (e) => { const t = e.target; if (!t.dataset || !t.dataset.whday || t.value === "__split") return; setRowDay(S.whEvent, t.dataset.whday, t.value); });
+  document.addEventListener("change", (e) => { const t = e.target; if (!t.dataset) return;
+    if (t.dataset.whday) { const id = t.dataset.whday; S.whSplit = S.whSplit || {};
+      if (t.value === "split") { S.whSplit[id] = true; return render(); }
+      delete S.whSplit[id]; return setRowDay(S.whEvent, id, t.value); }
+    if (t.dataset.whsplit) { const id = t.dataset.whsplit, bk = S.bookings.find((b) => b.event_id === S.whEvent && b.banner_id === id); if (!bk) return;
+      const cur = bk.day || "", m = isSplit(cur) ? parseSplit(cur) : cur ? { [cur]: num(bk.qty) } : {};
+      m[t.dataset.d] = Math.max(0, num(t.value));
+      const ks = Object.keys(m).filter((k) => num(m[k]) > 0), sum = ks.reduce((a, k) => a + num(m[k]), 0);
+      S.whSplit = S.whSplit || {}; S.whSplit[id] = true;
+      setRowDay(S.whEvent, id, !ks.length ? "" : ks.length === 1 && sum === num(bk.qty) ? ks[0] : makeSplit(m)); } });
   async function handleForm(e) {
     if (e.target.id === "idea-form") {
       e.preventDefault();

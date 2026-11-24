@@ -562,3 +562,6 @@ body.is-dragging .day-drop { border-color: #3a9a83; }
 tr.drag-row { cursor: grab; }
 tr.drag-row.dragging { opacity: .4; }
 .grip { color: #9bb5be; margin-right: 6px; font-size: 14px; cursor: grab; }
+.split-left { width: 100%; font-size: 11px; color: var(--warn, #b25e00); }
+.split-left.ok { color: #2f7d6a; }
+.split-left.bad { color: #b42318; }
