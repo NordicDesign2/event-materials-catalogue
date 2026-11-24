@@ -725,13 +725,14 @@
         <h3>${esc(ev.event_name)}</h3>
         <div class="muted">${fmtDate(ev.start_date)}${ev.end_date && ev.end_date !== ev.start_date ? " – " + fmtDate(ev.end_date) : ""} · ${esc(ev.city || "")}</div>
         <div class="muted">${items.filter((x) => x.b.tracked).reduce((s, x) => s + x.q, 0)} banners · ${items.filter((x) => !x.b.tracked && !isDesign(x.b)).reduce((s, x) => s + x.q, 0)} to print${items.some((x) => isDesign(x.b)) ? ` · ${items.filter((x) => isDesign(x.b)).length} for design to make` : ""} ${S.dirty ? '· <b style="color:var(--warn)">unsaved</b>' : status ? "· saved" : ""}</div>
-        ${items.some((x) => !isDesign(x.b)) && !locked ? `<div class="day-hint">📦 Use the <b>day menu</b> under each item to put it in a day box, or split it across days.</div>` : ""}
+        ${items.some((x) => !isOneOff(x.b)) && !locked ? `<div class="day-hint">📦 Use the <b>day menu</b> under each item to put it in a day box, or split it across days.</div>` : ""}
       </div>
       <div class="tray-list">
-        ${items.length ? [...(() => { const phys = items.filter((x) => !isDesign(x.b)); const n = daysOf(ev); const dd = (x) => { const v = (S.draftDay || {})[x.b.banner_id] || ""; return isSplit(v) ? "SPLIT" : v; };
+        ${items.length ? [...(() => { const n = daysOf(ev); const dd = (x) => { const v = (S.draftDay || {})[x.b.banner_id] || ""; return isSplit(v) ? "SPLIT" : v; };
+            const phys = items.filter((x) => !isDesign(x.b) || (!isOneOff(x.b) && dd(x)));
             if (!phys.some(dd)) return [["", phys]];
             return ["", ...Array.from({ length: n }, (_, i) => String(i + 1)), ...(phys.some((x) => dd(x) === "SPLIT") ? ["SPLIT"] : [])].map((d) => [`DAY:${d}`, phys.filter((x) => dd(x) === d)]).filter(([t, l]) => l.length || t !== "DAY:"); })(),
-            ["🎨 For the design team to make", items.filter((x) => isDesign(x.b))]].filter(([t, l]) => l.length || String(t).startsWith("DAY:")).map(([title, list]) => `${String(title).startsWith("DAY:") ? (() => { const d = title.slice(4); const sp = d && d !== "SPLIT" ? items.filter((x) => isSplit((S.draftDay || {})[x.b.banner_id]) && num(parseSplit(S.draftDay[x.b.banner_id])[d]) > 0) : [];
+            ["🎨 For the design team to make", items.filter((x) => isDesign(x.b) && !(!isOneOff(x.b) && (S.draftDay || {})[x.b.banner_id]))]].filter(([t, l]) => l.length || String(t).startsWith("DAY:")).map(([title, list]) => `${String(title).startsWith("DAY:") ? (() => { const d = title.slice(4); const sp = d && d !== "SPLIT" ? items.filter((x) => isSplit((S.draftDay || {})[x.b.banner_id]) && num(parseSplit(S.draftDay[x.b.banner_id])[d]) > 0) : [];
               const bits = [list.length ? list.length + " item" + (list.length > 1 ? "s" : "") : "", sp.length ? `+ from split items: ${sp.map((x) => `${num(parseSplit(S.draftDay[x.b.banner_id])[d])} × ${x.b.name}`).join(", ")}` : ""].filter(Boolean);
               return `<div class="tray-group day">📦 ${esc(dayLabel(d))}<span>${esc(bits.join(" ") || "Nothing yet – choose this day on any item")}</span></div>`; })() : title ? `<div class="tray-group design">${title}<span>Not picked by the warehouse – a design request is sent when you save</span></div>` : ""}${list.map(({ b, q }) => {
           const c = committedElsewhere(b.banner_id, ev.event_id);
@@ -739,7 +740,7 @@
           const warn = b.tracked && !locked && q > free ? `Only ${Math.max(0, free)} free${c.events.length ? " – also on " + c.events.join(", ") : ""}` : "";
           return `<div class="tray-item">
             ${thumbHTML(b)}
-            <div><div class="nm">${esc(isDesign(b) ? designLabel(b) : b.name)}</div><div class="sub">${esc(b.banner_id)} · ${b.tracked ? `${esc(b.language)} · ${esc(b.stored_at)}` : isOneOff(b) ? `${esc(b.section || "Digital asset")} · digital, made once` : isDesign(b) ? `${esc(b.kind || "")} · adapt & print · copies` : `${esc(b.currency)} · ${esc(b.region)} · copies`}</div>${warn ? `<div class="warn">⚠ ${esc(warn)}</div>` : ""}${!isDesign(b) ? `<div class="day-row">${daySelect(b, ev, locked)}</div>` : ""}</div>
+            <div><div class="nm">${esc(isDesign(b) ? designLabel(b) : b.name)}</div><div class="sub">${esc(b.banner_id)} · ${b.tracked ? `${esc(b.language)} · ${esc(b.stored_at)}` : isOneOff(b) ? `${esc(b.section || "Digital asset")} · digital, made once` : isDesign(b) ? `${esc(b.kind || "")} · adapt & print · copies` : `${esc(b.currency)} · ${esc(b.region)} · copies`}</div>${warn ? `<div class="warn">⚠ ${esc(warn)}</div>` : ""}${!isOneOff(b) ? `<div class="day-row">${daySelect(b, ev, locked)}</div>` : ""}</div>
             ${isOneOff(b) ? `<button class="btn small" data-step="-1" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""} title="Take it off this event">Remove</button>` : isSplit((S.draftDay || {})[b.banner_id]) ? `<div class="split-total" title="Total across the days">${q}</div>` : `<input type="number" min="0" value="${q}" data-qty="${esc(b.banner_id)}" ${locked ? "disabled" : ""} aria-label="Quantity">`}
           </div>`;
         }).join("")}`).join("") : `<div class="tray-empty">Use the <b>+</b> buttons or tick boxes to add materials to this event's list.</div>`}
