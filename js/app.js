@@ -227,7 +227,7 @@
       const st = demoStore();
       S.banners = [...parseCSV(bt).map((b) => asBanner({ ...b, ...(st.overrides?.[b.banner_id] || {}) })), ...parseCSV(ot).map(asOffer), ...parseCSV(pt).map(asPoster), ...parseCSV(lt).map(asPriceList), ...parseCSV(at).map(asPast), ...parseCSV(brt).map(asBrochure), ...parseCSV(clt).map(asClinical), ...parseCSV(dgt).map(asDigital), ...parseCSV(mt).map((o) => asMisc({ ...o, ...(st.overrides?.[o.item_id] || {}) }))];
       S.kits = parseCSV(kt);
-      S.events = [...parseCSV(et), ...(st.events || []).map((e) => ({ ...e, _added: true }))];
+      S.events = [...parseCSV(et).map((e) => ({ ...e, ...((st.eventEdits || {})[e.event_id] || {}) })), ...(st.events || []).map((e) => ({ ...e, _added: true }))];
       S.bookings = st.bookings || [];
       S.ideas = st.ideas || [];
       S.movements = st.movements || [];
@@ -292,6 +292,10 @@
       st.bookings.filter((b) => b.event_id === p.event_id).forEach((b) => { b.status = "Returned"; b.updated_at = now; b.updated_by = p.by; });
     } else if (p.action === "addEvent") {
       st.events.push(p.event);
+    } else if (p.action === "updateEvent") {
+      const ch = { ...(p.changes || {}) }; delete ch.event_id;
+      const own = st.events.find((x) => x.event_id === p.event_id);
+      if (own) Object.assign(own, ch); else { st.eventEdits = st.eventEdits || {}; st.eventEdits[p.event_id] = { ...(st.eventEdits[p.event_id] || {}), ...ch }; }
     } else if (p.action === "setBookingDay") {
       const b = st.bookings.find((x) => x.event_id === p.event_id && x.banner_id === p.banner_id); if (!b) throw new Error("Item not on this event's list");
       if (b.status !== "Requested") throw new Error("Already dispatched – day boxes can't be changed");
@@ -1098,23 +1102,26 @@
         <h2 style="margin-top:0">📨 One more step – send the email</h2>
         <p class="muted" style="margin-top:0">This preview isn't connected to the Google Sheet yet, so it can't email the events team by itself. Your request is on the events list – click below to open it as a ready-written email to ${esc(CFG.requestEmail)}.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn primary" href="${esc(S.requestMail)}" target="_blank" rel="noopener">Open email to ${esc(CFG.requestEmail)}</a><button class="btn" data-act="close-request-mail">Done</button></div></div>` : ""}
-      ${S.showNewEvent ? `<form class="panel" id="new-event" style="margin-bottom:16px">
-        <h2>New event</h2>
+      ${S.showNewEvent ? (() => { const ed = S.editEvent ? evById(S.editEvent) || {} : {}; const v = (k) => esc(ed[k] || "");
+        return `<form class="panel" id="new-event" style="margin-bottom:16px">
+        <h2>${S.editEvent ? `Edit event – ${esc(ed.event_name || "")}` : "New event"}</h2>
+        ${S.editEvent ? `<input type="hidden" name="edit_id" value="${esc(S.editEvent)}">` : ""}
         <div class="form-grid">
-          <label>Event name*<input type="text" name="event_name" required></label>
-          <label>Type*<select name="event_type" required>${types.map((t) => `<option>${esc(t)}</option>`).join("")}</select></label>
-          <label>Start date*<input type="date" name="start_date" required></label>
-          <label>End date<input type="date" name="end_date"></label>
-          <label>Venue<input type="text" name="venue"></label>
-          <label>City<input type="text" name="city"></label>
-          <label>Country<input type="text" name="country"></label>
-          <label>Ship by<input type="date" name="ship_by"></label>
-          <label>Back in store by<input type="date" name="return_by"></label>
-          <label>Owner<input type="text" name="owner"></label>
+          <label>Event name*<input type="text" name="event_name" required value="${v("event_name")}"></label>
+          <label>Type*<select name="event_type" required>${uniq([...types, ed.event_type].filter(Boolean)).map((t) => `<option ${ed.event_type === t ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
+          <label>Start date*<input type="date" name="start_date" required value="${v("start_date")}"></label>
+          <label>End date<input type="date" name="end_date" value="${v("end_date")}"></label>
+          <label>Venue<input type="text" name="venue" value="${v("venue")}"></label>
+          <label>City<input type="text" name="city" value="${v("city")}"></label>
+          <label>Country<input type="text" name="country" value="${v("country")}"></label>
+          <label>Ship by<input type="date" name="ship_by" value="${v("ship_by")}"></label>
+          <label>Back in store by<input type="date" name="return_by" value="${v("return_by")}"></label>
+          <label>Owner<input type="text" name="owner" value="${v("owner")}"></label>
+          ${S.editEvent ? `<label>Status<select name="status">${uniq(["Requested", "Planning", "Confirmed", "Completed", "Cancelled", ed.status].filter(Boolean)).map((t) => `<option ${ed.status === t ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>` : ""}
         </div>
-        <label class="muted" style="display:block;margin-top:10px">Notes<textarea name="notes" rows="2"></textarea></label>
-        <div style="margin-top:12px;display:flex;gap:8px"><button class="btn primary" type="submit">Add event</button><button class="btn" type="button" data-act="toggle-new-event">Cancel</button></div>
-      </form>` : ""}
+        <label class="muted" style="display:block;margin-top:10px">Notes<textarea name="notes" rows="2">${v("notes")}</textarea></label>
+        <div style="margin-top:12px;display:flex;gap:8px"><button class="btn primary" type="submit">${S.editEvent ? "Save changes" : "Add event"}</button><button class="btn" type="button" data-act="toggle-new-event">Cancel</button></div>
+      </form>`; })() : ""}
       ${list.length ? `<div class="events-grid">${list.map((e) => eventCard(e, archive)).join("")}</div>`
         : `<div class="empty"><h2>${archive ? "No previous events yet" : "No current events"}</h2><p>${archive ? "Events move here automatically once they've finished." : "Add one with “New event”."}</p></div>`}`;
   }
@@ -1158,6 +1165,7 @@
         <button class="btn ${archive ? "" : "primary"} small" data-act="plan" data-id="${esc(e.event_id)}">${st && st !== "Requested" ? "View materials" : rows.length ? "Edit materials" : "Pick materials"}</button>
         ${rows.length ? `<button class="btn small" data-act="to-warehouse" data-id="${esc(e.event_id)}">Warehouse</button>
         <button class="btn small" data-act="export-event" data-id="${esc(e.event_id)}">CSV</button>` : ""}
+        <button class="btn small" data-act="edit-event" data-id="${esc(e.event_id)}" title="Change the name, dates, venue, status…">Edit details</button>
         ${LIVE || e._added ? `<button class="btn small danger-btn" data-act="delete-event" data-id="${esc(e.event_id)}" title="Delete this event, its materials list and any design jobs not started yet">${S.confirmDel === e.event_id ? "Click again to delete" : "Delete"}</button>` : ""}
       </div>
     </div>`;
@@ -1587,7 +1595,9 @@
         catch (err) { if (/design team/i.test(err.message)) { setDesigner("", ""); render(); } throw err; }
       }
       else if (a === "show-made") { const ev = evById(el.dataset.id); S.cat = "pastevents"; resetFilters(); S.f.section = ev ? ev.event_name : "all"; go("catalogue"); }
-      else if (a === "toggle-new-event") { S.showNewEvent = !S.showNewEvent; S.showRequest = false; render(); }
+      else if (a === "toggle-new-event") { S.showNewEvent = !S.showNewEvent; S.editEvent = ""; S.showRequest = false; render(); }
+      else if (a === "edit-event") { S.editEvent = el.dataset.id; S.showNewEvent = true; S.showRequest = false; S.evPlan = ""; render();
+        setTimeout(() => { const f = document.getElementById("new-event"); if (f) f.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30); }
       else if (a === "delete-event") {
         const id = el.dataset.id, ev = evById(id);
         if (S.confirmDel !== id) { S.confirmDel = id; render(); clearTimeout(S._delT); S._delT = setTimeout(() => { if (S.confirmDel === id) { S.confirmDel = ""; render(); } }, 5000); return; }
@@ -1737,6 +1747,10 @@
     if (e.target.id !== "new-event") return;
     e.preventDefault();
     const fd = Object.fromEntries(new FormData(e.target).entries());
+    if (fd.edit_id) { const id = fd.edit_id; delete fd.edit_id;
+      try { await act({ action: "updateEvent", event_id: id, changes: fd }); S.showNewEvent = false; S.editEvent = ""; render(); toast("Event details saved"); }
+      catch (err) { toast(err.message, true); }
+      return; }
     const n = S.events.reduce((m, x) => Math.max(m, num((x.event_id || "").replace(/\D/g, ""))), 0) + 1;
     const event = { event_id: "EVT-" + String(n).padStart(3, "0"), status: "Planning", ...fd };
     try { await act({ action: "addEvent", event }); S.showNewEvent = false; render(); toast("Event added"); }

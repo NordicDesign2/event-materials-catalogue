@@ -148,6 +148,11 @@ function doPost(e) {
     } else if (p.action === 'moveStock') {
       updateStock_(p.banner_id, (r) => { mv('', p.banner_id, 'moved', Number(r.qty_owned) || 0, 'Now stored at ' + p.stored_at + ' (was ' + (r.stored_at || '—') + ')'); return { stored_at: p.stored_at }; });
 
+    } else if (p.action === 'updateEvent') {
+      const ch = Object.assign({}, p.changes || {}); delete ch.event_id; delete ch.requester_email;
+      if ('event_name' in ch && !String(ch.event_name).trim()) throw new Error('The event needs a name');
+      updateWhere_('Events', (r) => r.event_id === p.event_id, () => ch);
+
     } else if (p.action === 'setBookingDay') {
       updateWhere_('Bookings', (r) => r.event_id === p.event_id && r.banner_id === p.banner_id && r.status === 'Requested', () => ({ day: p.day || '', updated_at: now, updated_by: by }));
 
