@@ -712,7 +712,7 @@
             <div><div class="nm">${esc(isDesign(b) ? designLabel(b) : b.name)}</div><div class="sub">${esc(b.banner_id)} · ${b.tracked ? `${esc(b.language)} · ${esc(b.stored_at)}` : isDesign(b) ? `${esc(b.kind || "")} · adapt & print · copies` : `${esc(b.currency)} · ${esc(b.region)} · copies`}</div>${warn ? `<div class="warn">⚠ ${esc(warn)}</div>` : ""}</div>
             <input type="number" min="0" value="${q}" data-qty="${esc(b.banner_id)}" ${locked ? "disabled" : ""} aria-label="Quantity">
           </div>`;
-        }).join("")}`).join("") : `<div class="tray-empty">Use the <b>+</b> buttons to add banners and special offer forms to this event's list.</div>`}
+        }).join("")}`).join("") : `<div class="tray-empty">Use the <b>+</b> buttons to add materials to this event's list.</div>`}
       </div>
       <div class="tray-foot">
         ${locked ? `<div class="pill warn">Already ${esc(status.toLowerCase())} – view it in Warehouse</div>` : ""}
@@ -995,12 +995,12 @@
       <div class="muted">${esc([e.venue, e.city, e.country].filter(Boolean).join(" · "))}</div>
       <div class="card-meta">
         ${e.status ? `<span class="pill">${esc(e.status)}</span>` : ""}
-        ${st ? `<span class="pill ${pill}">Banners: ${esc(st)}</span>` : `<span class="pill">No banners picked</span>`}
+        ${st ? `<span class="pill ${pill}">Materials: ${esc(st)}</span>` : `<span class="pill">No materials picked</span>`}
         ${e.ship_by ? `<span class="pill">Ship by ${fmtDate(e.ship_by)}</span>` : ""}
         ${e.owner ? `<span class="pill">${esc(e.owner)}</span>` : ""}
       </div>
       ${e.featured_items ? (() => { const fb = uniq(String(e.featured_items).split(/[,\s]+/)).map(byId).filter(Boolean); return `<div class="featured">${fb.map((b) => `<div data-zoom="${esc(b.banner_id)}" title="${esc(b.name)}">${imgSrc(b) ? `<img src="${esc(imgSrc(b))}" alt="${esc(b.name)}" loading="lazy">` : ""}</div>`).join("")}</div>
-      <div class="feat-cap"><b>Banners for this event:</b> ${fb.map((b) => `<a href="#" data-zoom="${esc(b.banner_id)}">${esc(b.name)}</a>`).join(" · ")}</div>`; })() : ""}
+      <div class="feat-cap"><b>Materials for this event:</b> ${fb.map((b) => `<a href="#" data-zoom="${esc(b.banner_id)}">${esc(b.name)}</a>`).join(" · ")}</div>`; })() : ""}
       ${e.country ? `<div class="muted" style="font-size:12px">Branding: <b>${esc(regionOf(e.country))}</b></div>` : ""}
       ${e.status === "Requested" || e.requested_by ? `<div class="request-box"><b>📨 Requested by ${esc(e.requested_by || "sales")}</b>${e.request_type ? ` · ${esc(e.request_type)}` : ""}
         ${e.materials_requested ? `<div>Wants: ${esc(e.materials_requested)}</div>` : ""}${e.attendees ? `<div class="muted">~${esc(e.attendees)} attendees${e.brand_region ? " · " + esc(e.brand_region) : ""}</div>` : e.brand_region ? `<div class="muted">${esc(e.brand_region)}</div>` : ""}</div>` : ""}
@@ -1015,7 +1015,7 @@
         <span><b>${made.length} materials made for this event</b><br><span class="muted">Browse, reuse or adapt them</span></span></button>` : ""; })()}
       <div class="actions">
         ${archive ? `<button class="btn small" data-act="reuse" data-id="${esc(e.event_id)}" ${rows.length ? "" : "disabled"} title="Copy this list into an upcoming event">Reuse list…</button>` : ""}
-        <button class="btn ${archive ? "" : "primary"} small" data-act="plan" data-id="${esc(e.event_id)}">${st && st !== "Requested" ? "View banners" : rows.length ? "Edit banners" : "Pick banners"}</button>
+        <button class="btn ${archive ? "" : "primary"} small" data-act="plan" data-id="${esc(e.event_id)}">${st && st !== "Requested" ? "View materials" : rows.length ? "Edit materials" : "Pick materials"}</button>
         ${rows.length ? `<button class="btn small" data-act="to-warehouse" data-id="${esc(e.event_id)}">Warehouse</button>
         <button class="btn small" data-act="export-event" data-id="${esc(e.event_id)}">CSV</button>` : ""}
       </div>
@@ -1177,7 +1177,7 @@
       <div class="table-wrap" id="stock-table">${stockTable(rows)}</div>`;
   }
   function stockTable(rows) {
-    return `<table class="tbl"><thead><tr><th></th><th>ID</th><th>Banner</th><th>Location</th><th>Language</th><th class="num">Owned</th><th class="num">Out</th><th class="num">In store</th><th>Status / action</th></tr></thead>
+    return `<table class="tbl"><thead><tr><th></th><th>ID</th><th>Item</th><th>Location</th><th>Language</th><th class="num">Owned</th><th class="num">Out</th><th class="num">In store</th><th>Status / action</th></tr></thead>
       <tbody>${rows.map((r) => `<tr><td>${thumbHTML(r)}</td><td class="muted">${esc(r.banner_id)}</td><td><b>${esc(r.name)}</b><div class="muted">${esc(r.brand)} · ${esc(r.section)}</div></td>
         <td>${esc(r.stored_at)}</td><td>${esc(r.language)}</td><td class="num">${r.owned}</td><td class="num">${r.out || ""}</td>
         <td class="num"><b style="color:${r.available ? "inherit" : "var(--bad)"}">${r.available}</b></td>
@@ -1195,7 +1195,7 @@
   }
   function movementTable(list) {
     if (!list.length) return `<div class="empty"><h2>Nothing recorded yet</h2></div>`;
-    return `<div class="table-wrap"><table class="tbl"><thead><tr><th>When</th><th></th><th>Banner</th><th>Type</th><th class="num">Qty</th><th>Event</th><th>By</th><th>Note</th></tr></thead>
+    return `<div class="table-wrap"><table class="tbl"><thead><tr><th>When</th><th></th><th>Item</th><th>Type</th><th class="num">Qty</th><th>Event</th><th>By</th><th>Note</th></tr></thead>
       <tbody>${list.map((m) => { const b = byId(m.banner_id) || {}; return `<tr><td>${esc((m.timestamp || "").replace("T", " ").slice(0, 16))}</td><td>${thumbHTML(b)}</td><td>${esc(b.name || m.banner_id)}</td>
         <td><span class="pill ${m.type === "missing" || m.type === "damaged" ? "bad" : m.type === "return" ? "good" : ""}">${esc(m.type)}</span></td><td class="num">${m.qty}</td>
         <td>${esc(evById(m.event_id)?.event_name || m.event_id || "")}</td><td>${esc(m.by)}</td><td>${esc(m.note || "")}</td></tr>`; }).join("")}</tbody></table></div>`;
@@ -1413,7 +1413,7 @@
         const src = evById(el.dataset.id);
         const targets = S.events.filter((x) => !isClosed(x) && eventStatus(x.event_id) !== "Dispatched" && eventStatus(x.event_id) !== "Returned");
         if (!targets.length) return toast("Add an upcoming event first", true);
-        const pick = prompt(`Copy the banner list from “${src.event_name}” into which event? Type its number:\n\n` + targets.map((x, i) => `${i + 1}. ${x.event_name} (${fmtDate(x.start_date)})`).join("\n"));
+        const pick = prompt(`Copy the materials list from “${src.event_name}” into which event? Type its number:\n\n` + targets.map((x, i) => `${i + 1}. ${x.event_name} (${fmtDate(x.start_date)})`).join("\n"));
         const tgt = targets[num(pick) - 1]; if (!tgt) return;
         startPlanning(tgt.event_id);
         S.bookings.filter((b) => b.event_id === src.event_id).forEach((b) => (S.draft[b.banner_id] = b.qty));
@@ -1421,7 +1421,7 @@
       }
       else if (a === "dispatch") {
         const ev = evById(S.whEvent);
-        if (!confirm(`Mark all banners for “${ev.event_name}” as dispatched?`)) return;
+        if (!confirm(`Mark all materials for “${ev.event_name}” as dispatched?`)) return;
         await act({ action: "dispatch", event_id: S.whEvent }); render(); toast("Dispatched – stock updated");
       }
       else if (a === "checkin") {
