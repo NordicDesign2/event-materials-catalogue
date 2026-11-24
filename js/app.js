@@ -1143,7 +1143,8 @@
   const whKind = (b) => (isDesign(b) ? "design" : b.consumable ? "supply" : b.tracked ? "stock" : "print");
   function whRows(eventId) {
     const order = WH_GROUPS.map((g) => g[0]);
-    return S.bookings.filter((x) => x.event_id === eventId).map((r) => ({ ...r, b: byId(r.banner_id) || { banner_id: r.banner_id, name: r.banner_id, tracked: true } }))
+    // Digital assets aren't packed – they live on the Event plan (Before the event), not the warehouse list
+    return S.bookings.filter((x) => x.event_id === eventId).map((r) => ({ ...r, b: byId(r.banner_id) || { banner_id: r.banner_id, name: r.banner_id, tracked: true } })).filter((r) => !isOneOff(r.b))
       .map((r) => ({ ...r, g: whGroup(r.b), kind: whKind(r.b) }))
       .sort((x, y) => order.indexOf(x.g) - order.indexOf(y.g) || LOC_ORDER(x.b.stored_at) - LOC_ORDER(y.b.stored_at) || (x.b.name || "").localeCompare(y.b.name || ""));
   }
@@ -1186,6 +1187,7 @@
       return head + info + dayBoard(ev, rows, false) + `<div class="table-wrap"><table class="tbl">
         <thead><tr><th>Packed</th><th></th><th>Item</th><th>Day box</th><th>From</th><th class="num">Qty</th><th class="num">In store now</th></tr></thead>
         <tbody>${body}</tbody></table></div>
+        ${S.bookings.some((x) => x.event_id === ev.event_id && isOneOff(byId(x.banner_id))) ? `<p class="muted">📱 Digital assets for this event aren't packed – they're on the <a href="#events" data-act="show-evplan" data-id="${esc(ev.event_id)}">Event plan</a> under “Before the event”.</p>` : ""}
         ${cnt("design") ? `<p class="muted">🎨 Design-team items are packed once they've been designed and printed – track them in <a href="#reports" data-act="go-jobs">Reports › Design jobs</a>.</p>` : ""}
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
           <button class="btn" data-act="print-pack">Print packing list</button>
@@ -1506,7 +1508,8 @@
         const rows = a === "export-plan" ? Object.entries(S.draft).filter(([, q]) => num(q) > 0).map(([id, q]) => { const b = byId(id) || {}; const ev = evById(eid) || {}; return { event_id: eid, event_name: ev.event_name, ship_by: ev.ship_by, category: b.tracked === false ? ({ posters: "Poster", brochures: "Brochure / flyer", clinical: "Clinical handout / guide", pricelists: "Price list", pastevents: "Past event material" })[b.category] || "Special offer form" : "Banner", banner_id: id, banner_name: b.name, language: b.language, brand: b.brand, banner_type: b.banner_type, stored_at: b.stored_at, qty: num(q), status: S.dirty ? "Unsaved" : eventStatus(eid) }; }) : eventRows(eid);
         download(`banners_${eid}.csv`, toCSV(rows, EVENT_COLS));
       }
-      else if (a === "show-evplan") { S.evPlan = S.evPlan === el.dataset.id ? "" : el.dataset.id; S.kitEvent = ""; S.runupEvent = ""; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+      else if (a === "show-evplan") { e.preventDefault(); const id = el.dataset.id; if (S.view !== "events") { S.evPlan = id; const ev = evById(id); go("events", { evTab: ev && isClosed(ev) ? "archive" : "upcoming", evType: "all" }); return; }
+        S.evPlan = S.evPlan === id ? "" : id; S.kitEvent = ""; S.runupEvent = ""; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
       else if (a === "show-runup") { S.runupEvent = S.runupEvent === el.dataset.id ? "" : el.dataset.id; S.kitEvent = ""; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
       else if (a === "show-kit") { S.kitEvent = S.kitEvent === el.dataset.id ? "" : el.dataset.id; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
       else if (a === "print-kit") { const ev = evById(S.kitEvent); printHTML(`Kit list – ${ev.event_name}`, kitTable(S.kitEvent, true)); }
