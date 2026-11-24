@@ -534,3 +534,4 @@ tr.wh-band td { background: var(--accent-2, #e6f1f4); font-weight: 700; color: v
 .split-days label { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ink-3); }
 .split-days input { width: 52px; text-align: center; font-size: 12px; padding: 2px 4px; }
 .split-total { min-width: 40px; text-align: center; font-weight: 700; color: #00475a; }
+.day-hint { margin-top: 8px; font-size: 12px; background: #e6f2f5; color: #00475a; padding: 6px 8px; border-radius: 8px; }
