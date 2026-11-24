@@ -519,3 +519,9 @@ tr.wh-band td { background: var(--accent-2, #e6f1f4); font-weight: 700; color: v
 
 .danger-btn { color: #b42318; border-color: #f1c4bf; }
 .danger-btn:hover { background: #fdecea; }
+
+.tick-pick { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 1px solid #cfe0e6; border-radius: 10px; background: #fff; font: inherit; font-size: 13px; color: #00475a; cursor: pointer; text-align: left; }
+.tick-pick .box { width: 18px; height: 18px; border: 2px solid #8fb3bf; border-radius: 4px; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; flex: none; }
+.tick-pick.on { background: #e8f4f1; border-color: #3a9a83; }
+.tick-pick.on .box { background: #3a9a83; border-color: #3a9a83; }
+.tick-pick:disabled { opacity: .5; cursor: default; }

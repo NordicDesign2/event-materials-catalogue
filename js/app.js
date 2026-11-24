@@ -631,7 +631,11 @@
     `;
   }
 
-  const stepOf = (b) => (b.tracked || b.stock_item ? 1 : 10);
+  const stepOf = (b) => (b.tracked || b.stock_item || isOneOff(b) ? 1 : 10);
+  // Digital assets are made once per event: a tick box, not a number of copies
+  const isOneOff = (b) => b && b.category === "digital";
+  const tickHTML = (b, on, locked) => `<button class="tick-pick ${on ? "on" : ""}" data-step="${on ? -1 : 1}" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""} aria-pressed="${on}">
+      <span class="box">${on ? "✓" : ""}</span><span>${on ? "Added – design team makes it" : "Add to this event"}</span></button>`;
   const sumStock = (rows) => rows.reduce((a, r) => { const s = stock(r); return { owned: a.owned + s.owned, out: a.out + s.out, available: a.available + s.available }; }, { owned: 0, out: 0, available: 0 });
   const freeFor = (r, evId) => Math.max(0, num(r.qty_owned) - committedElsewhere(r.banner_id, evId).qty - num(S.draft[r.banner_id]));
   function locBubbles(rows, ev) {
@@ -666,7 +670,7 @@
       if (L) { sub = `picks ${esc(L.banner_id)} · ${freeFor(L, ev.event_id)} free`; picked = num(S.draft[L.banner_id]); }
       else if (b.tracked) { const free = rows.reduce((s, r) => s + freeFor(r, ev.event_id), 0); sub = `${free} more free`; }
       else sub = isDesign(b) ? "🎨 design team makes" : "copies to print";
-      stepper = `<div class="stepper">
+      stepper = isOneOff(b) ? tickHTML(b, picked > 0, locked) : `<div class="stepper">
         <button data-step="-${n}" data-id="${esc(b.banner_id)}" data-group="1" ${locked ? "disabled" : ""} aria-label="Remove">−</button>
         <div style="text-align:center"><div class="q">${picked}</div><div class="avail">${sub}</div></div>
         <button data-step="${n}" data-id="${esc(b.banner_id)}" data-group="1" ${locked ? "disabled" : ""} aria-label="Add">+</button>
@@ -713,10 +717,10 @@
           const warn = b.tracked && !locked && q > free ? `Only ${Math.max(0, free)} free${c.events.length ? " – also on " + c.events.join(", ") : ""}` : "";
           return `<div class="tray-item">
             ${thumbHTML(b)}
-            <div><div class="nm">${esc(isDesign(b) ? designLabel(b) : b.name)}</div><div class="sub">${esc(b.banner_id)} · ${b.tracked ? `${esc(b.language)} · ${esc(b.stored_at)}` : isDesign(b) ? `${esc(b.kind || "")} · adapt & print · copies` : `${esc(b.currency)} · ${esc(b.region)} · copies`}</div>${warn ? `<div class="warn">⚠ ${esc(warn)}</div>` : ""}</div>
-            <input type="number" min="0" value="${q}" data-qty="${esc(b.banner_id)}" ${locked ? "disabled" : ""} aria-label="Quantity">
+            <div><div class="nm">${esc(isDesign(b) ? designLabel(b) : b.name)}</div><div class="sub">${esc(b.banner_id)} · ${b.tracked ? `${esc(b.language)} · ${esc(b.stored_at)}` : isOneOff(b) ? `${esc(b.section || "Digital asset")} · digital, made once` : isDesign(b) ? `${esc(b.kind || "")} · adapt & print · copies` : `${esc(b.currency)} · ${esc(b.region)} · copies`}</div>${warn ? `<div class="warn">⚠ ${esc(warn)}</div>` : ""}</div>
+            ${isOneOff(b) ? `<button class="btn small" data-step="-1" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""} title="Take it off this event">Remove</button>` : `<input type="number" min="0" value="${q}" data-qty="${esc(b.banner_id)}" ${locked ? "disabled" : ""} aria-label="Quantity">`}
           </div>`;
-        }).join("")}`).join("") : `<div class="tray-empty">Use the <b>+</b> buttons to add materials to this event's list.</div>`}
+        }).join("")}`).join("") : `<div class="tray-empty">Use the <b>+</b> buttons or tick boxes to add materials to this event's list.</div>`}
       </div>
       <div class="tray-foot">
         ${locked ? `<div class="pill warn">Already ${esc(status.toLowerCase())} – view it in Warehouse</div>` : ""}
@@ -879,7 +883,8 @@
           ${b.notes ? `<dt>Notes</dt><dd style="font-weight:500">${esc(b.notes)}</dd>` : ""}
           ${b.source_file ? `<dt>Design file</dt><dd style="font-weight:500;font-size:11px;word-break:break-word">${/^(Print Materials|TESTS & CLINICAL MATERIALS|Promotions For Events)\//.test(b.source_file) ? "" : (b._posterOf ? "Special Offers" : ({ posters: "Posters", brochures: "Print Materials", pricelists: "Price lists", pastevents: "Archived event materials", digital: "Archived event materials" })[b.category] || "Special Offers") + " / "}${esc(b.source_file)}</dd>` : ""}
         </dl>
-        ${ev && !linkOf(b) ? `<div class="lb-section">
+        ${ev && isOneOff(b) ? `<div class="lb-section"><b>For ${esc(ev.event_name)}</b><div style="margin-top:6px">${tickHTML(b, num(S.draft[b.banner_id]) > 0, locked)}</div></div>` : ""}
+        ${ev && !linkOf(b) && !isOneOff(b) ? `<div class="lb-section">
           <b>Copies for ${esc(ev.event_name)}</b>
           <div class="stepper" style="border:0;padding:0">
             <button data-step="-10" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""}>−</button>
@@ -1344,7 +1349,7 @@
       if (d > 0) target = (rows.filter((r) => freeFor(r, ev.event_id) > 0).sort((x, y) => LOC_ORDER(x.stored_at) - LOC_ORDER(y.stored_at))[0] || rows[0]).banner_id;
       else { const has = rows.filter((r) => num(S.draft[r.banner_id]) > 0); if (!has.length) return; target = has[has.length - 1].banner_id; }
     }
-    S.draft[target] = Math.max(0, num(S.draft[target]) + d); S.dirty = true;
+    S.draft[target] = Math.max(0, num(S.draft[target]) + d); if (isOneOff(byId(target))) S.draft[target] = Math.min(1, S.draft[target]); S.dirty = true;
     render(); if (!$("#lightbox").hidden) renderLB();
   }
 
