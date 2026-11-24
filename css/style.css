@@ -525,3 +525,7 @@ tr.wh-band td { background: var(--accent-2, #e6f1f4); font-weight: 700; color: v
 .tick-pick.on { background: #e8f4f1; border-color: #3a9a83; }
 .tick-pick.on .box { background: #3a9a83; border-color: #3a9a83; }
 .tick-pick:disabled { opacity: .5; cursor: default; }
+
+.tray-group.day { background: #e6f2f5; color: #00475a; }
+.tray-item .day-row { margin-top: 4px; }
+.day-sel { font: inherit; font-size: 12px; padding: 3px 6px; border: 1px solid #cfe0e6; border-radius: 6px; background: #fff; color: #00475a; }

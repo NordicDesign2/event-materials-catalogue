@@ -44,7 +44,7 @@ const TABS = {
   KitLists: ['event_id', 'group', 'day', 'timing', 'item', 'qty', 'item_ref'],
   PastEventMaterials: ['item_id', 'name', 'section', 'event_id', 'kind', 'format', 'currency', 'region', 'language', 'brand',
                        'version', 'event_specific', 'pages', 'thumbnail', 'thumbnail_2', 'print_file', 'source_file', 'status', 'notes', 'stock_item', 'material', 'design_id', 'edition', 'banner_ref', 'generic', 'offer_design'],
-  Bookings: ['event_id', 'banner_id', 'qty', 'status', 'updated_at', 'updated_by', 'note'],
+  Bookings: ['event_id', 'banner_id', 'qty', 'status', 'updated_at', 'updated_by', 'note', 'day'],
   Movements: ['timestamp', 'event_id', 'banner_id', 'type', 'qty', 'by', 'note'],
 };
 
@@ -117,7 +117,7 @@ function doPost(e) {
       if (rows.some((r) => r.event_id === p.event_id && r.status !== 'Requested')) throw new Error('This event has already been dispatched – its list can\'t be changed.');
       deleteWhere_('Bookings', (r) => r.event_id === p.event_id);
       (p.items || []).filter((i) => Number(i.qty) > 0).forEach((i) =>
-        append_('Bookings', { event_id: p.event_id, banner_id: i.banner_id, qty: Number(i.qty), status: 'Requested', updated_at: now, updated_by: by, note: p.note || '' }));
+        append_('Bookings', { event_id: p.event_id, banner_id: i.banner_id, qty: Number(i.qty), day: i.day || '', status: 'Requested', updated_at: now, updated_by: by, note: p.note || '' }));
 
     } else if (p.action === 'dispatch') {
       const moves = read_('Movements');

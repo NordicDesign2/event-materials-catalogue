@@ -254,7 +254,7 @@
     if (p.action === "saveBooking") {
       if (st.bookings.some((b) => b.event_id === p.event_id && b.status !== "Requested")) throw new Error("This event has already been dispatched – its list can't be changed.");
       st.bookings = st.bookings.filter((b) => b.event_id !== p.event_id);
-      p.items.filter((i) => num(i.qty) > 0).forEach((i) => st.bookings.push({ event_id: p.event_id, banner_id: i.banner_id, qty: num(i.qty), status: "Requested", updated_at: now, updated_by: p.by, note: p.note || "" }));
+      p.items.filter((i) => num(i.qty) > 0).forEach((i) => st.bookings.push({ event_id: p.event_id, banner_id: i.banner_id, qty: num(i.qty), day: i.day || "", status: "Requested", updated_at: now, updated_by: p.by, note: p.note || "" }));
     } else if (p.action === "dispatch") {
       st.bookings.filter((b) => b.event_id === p.event_id).forEach((b) => { b.status = "Dispatched"; b.updated_at = now; b.updated_by = p.by; mv(p.event_id, b.banner_id, "dispatch", b.qty);
         const sp = spareOf(b.banner_id, st.movements); if (sp > 0) mv(p.event_id, b.banner_id, "spare used", Math.min(sp, num(b.qty)), "Spare copies left over from an earlier event, sent first"); });
@@ -374,8 +374,8 @@
     window.scrollTo(0, 0);
   }
   function startPlanning(eventId) {
-    S.planEvent = eventId; S.dirty = false; S.draft = {};
-    S.bookings.filter((b) => b.event_id === eventId).forEach((b) => (S.draft[b.banner_id] = b.qty));
+    S.planEvent = eventId; S.dirty = false; S.draft = {}; S.draftDay = {};
+    S.bookings.filter((b) => b.event_id === eventId).forEach((b) => { S.draft[b.banner_id] = b.qty; if (b.day) S.draftDay[b.banner_id] = String(b.day); });
   }
 
   // ───────────────────────── render: shell ──────────────────
@@ -699,6 +699,13 @@
     </div>`;
   }
 
+  // Days of an event (1 for a one-day event, at most 7), for sorting materials into day boxes
+  const daysOf = (ev) => { if (!ev || !ev.start_date) return 1; const a = new Date(ev.start_date), z = new Date(ev.end_date || ev.start_date); const n = Math.round((z - a) / 864e5) + 1; return isNaN(n) ? 1 : Math.max(1, Math.min(7, n)); };
+  const dayLabel = (d) => (d ? "Day " + d : "Whole event / set-up");
+  const daySelect = (b, ev, locked) => { const n = daysOf(ev), cur = (S.draftDay || {})[b.banner_id] || "";
+    return `<select class="day-sel" data-day="${esc(b.banner_id)}" ${locked ? "disabled" : ""} aria-label="Which day">
+      <option value="">Whole event</option>${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${cur === String(i + 1) ? "selected" : ""}>Day ${i + 1}</option>`).join("")}</select>`; };
+
   // ───────────────────────── planning tray ─────────────────
   function renderTray() {
     const ev = evById(S.planEvent); if (!ev) return;
@@ -713,13 +720,16 @@
         <div class="muted">${items.filter((x) => x.b.tracked).reduce((s, x) => s + x.q, 0)} banners · ${items.filter((x) => !x.b.tracked && !isDesign(x.b)).reduce((s, x) => s + x.q, 0)} to print${items.some((x) => isDesign(x.b)) ? ` · ${items.filter((x) => isDesign(x.b)).length} for design to make` : ""} ${S.dirty ? '· <b style="color:var(--warn)">unsaved</b>' : status ? "· saved" : ""}</div>
       </div>
       <div class="tray-list">
-        ${items.length ? [["", items.filter((x) => !isDesign(x.b))], ["🎨 For the design team to make", items.filter((x) => isDesign(x.b))]].filter(([, l]) => l.length).map(([title, list]) => `${title ? `<div class="tray-group design">${title}<span>Not picked by the warehouse – a design request is sent when you save</span></div>` : ""}${list.map(({ b, q }) => {
+        ${items.length ? [...(() => { const phys = items.filter((x) => !isDesign(x.b)); const n = daysOf(ev); const dd = (x) => (S.draftDay || {})[x.b.banner_id] || "";
+            if (n === 1 && !phys.some(dd)) return [["", phys]];
+            return ["", ...Array.from({ length: n }, (_, i) => String(i + 1))].map((d) => [`DAY:${d}`, phys.filter((x) => dd(x) === d)]).filter(([t, l]) => l.length || t !== "DAY:"); })(),
+            ["🎨 For the design team to make", items.filter((x) => isDesign(x.b))]].filter(([t, l]) => l.length || String(t).startsWith("DAY:")).map(([title, list]) => `${String(title).startsWith("DAY:") ? `<div class="tray-group day">📦 ${esc(dayLabel(title.slice(4)))}<span>${list.length ? list.length + " item" + (list.length > 1 ? "s" : "") : "Nothing yet – choose this day on any item"}</span></div>` : title ? `<div class="tray-group design">${title}<span>Not picked by the warehouse – a design request is sent when you save</span></div>` : ""}${list.map(({ b, q }) => {
           const c = committedElsewhere(b.banner_id, ev.event_id);
           const free = b.qty_owned - c.qty;
           const warn = b.tracked && !locked && q > free ? `Only ${Math.max(0, free)} free${c.events.length ? " – also on " + c.events.join(", ") : ""}` : "";
           return `<div class="tray-item">
             ${thumbHTML(b)}
-            <div><div class="nm">${esc(isDesign(b) ? designLabel(b) : b.name)}</div><div class="sub">${esc(b.banner_id)} · ${b.tracked ? `${esc(b.language)} · ${esc(b.stored_at)}` : isOneOff(b) ? `${esc(b.section || "Digital asset")} · digital, made once` : isDesign(b) ? `${esc(b.kind || "")} · adapt & print · copies` : `${esc(b.currency)} · ${esc(b.region)} · copies`}</div>${warn ? `<div class="warn">⚠ ${esc(warn)}</div>` : ""}</div>
+            <div><div class="nm">${esc(isDesign(b) ? designLabel(b) : b.name)}</div><div class="sub">${esc(b.banner_id)} · ${b.tracked ? `${esc(b.language)} · ${esc(b.stored_at)}` : isOneOff(b) ? `${esc(b.section || "Digital asset")} · digital, made once` : isDesign(b) ? `${esc(b.kind || "")} · adapt & print · copies` : `${esc(b.currency)} · ${esc(b.region)} · copies`}</div>${warn ? `<div class="warn">⚠ ${esc(warn)}</div>` : ""}${!isDesign(b) && (daysOf(ev) > 1 || (S.draftDay || {})[b.banner_id]) ? `<div class="day-row">${daySelect(b, ev, locked)}</div>` : ""}</div>
             ${isOneOff(b) ? `<button class="btn small" data-step="-1" data-id="${esc(b.banner_id)}" ${locked ? "disabled" : ""} title="Take it off this event">Remove</button>` : `<input type="number" min="0" value="${q}" data-qty="${esc(b.banner_id)}" ${locked ? "disabled" : ""} aria-label="Quantity">`}
           </div>`;
         }).join("")}`).join("") : `<div class="tray-empty">Use the <b>+</b> buttons or tick boxes to add materials to this event's list.</div>`}
@@ -1079,7 +1089,7 @@
         return `<tr class="wh-band"><td colspan="6">${esc(label)} <span class="muted">· ${gr.length}</span></td></tr>` + gr.map((r) => {
           const k = ev.event_id + "|" + r.banner_id; const s = r.kind === "stock" && !r.b.count_needed ? stock(r.b) : null;
           return `<tr class="${S.packed.has(k) ? "done" : ""}"><td><input type="checkbox" data-pack="${esc(k)}" ${S.packed.has(k) ? "checked" : ""} aria-label="Packed"></td>
-            <td>${thumbHTML(r.b)}</td><td><b>${esc(isDesign(r.b) ? designLabel(r.b) : r.b.name)}</b><div class="muted">${esc([r.banner_id, r.b.language, r.b.edition || r.b.format || r.b.banner_type].filter(Boolean).join(" · "))}</div></td>
+            <td>${thumbHTML(r.b)}</td><td><b>${esc(isDesign(r.b) ? designLabel(r.b) : r.b.name)}</b><div class="muted">${esc([r.banner_id, r.b.language, r.b.edition || r.b.format || r.b.banner_type].filter(Boolean).join(" · "))}</div>${r.day ? `<span class="kit-day">📦 Day ${esc(r.day)} box</span>` : ""}</td>
             <td>${whFrom(r, ev)}</td><td class="num"><b>${r.qty}</b>${r.kind === "print" || r.kind === "design" ? " copies" : ""}</td>
             <td class="num">${s ? (s.available < r.qty ? `<span class="pill bad">${s.available}</span>` : s.available) : r.b.count_needed ? `<span class="pill warn">count needed</span>` : spareOf(r.banner_id) ? `<span class="pill good" title="Left over from earlier events – send these first and print fewer">${spareOf(r.banner_id)} spare</span>` : "—"}</td></tr>`; }).join(""); }).join("");
       return head + info + `<div class="table-wrap"><table class="tbl">
@@ -1334,10 +1344,10 @@
     const e = evById(eid) || {};
     return S.bookings.filter((b) => b.event_id === eid).map((r) => {
       const b = byId(r.banner_id) || {};
-      return { event_id: eid, event_name: e.event_name, ship_by: e.ship_by, category: b.tracked === false ? ({ posters: "Poster", brochures: "Brochure / flyer", clinical: "Clinical handout / guide", pricelists: "Price list", pastevents: "Past event material" })[b.category] || "Special offer form" : "Banner", banner_id: r.banner_id, banner_name: b.name, language: b.language, brand: b.brand, banner_type: b.banner_type, stored_at: b.stored_at, qty: r.qty, status: r.status };
+      return { event_id: eid, event_name: e.event_name, ship_by: e.ship_by, category: b.tracked === false ? ({ posters: "Poster", brochures: "Brochure / flyer", clinical: "Clinical handout / guide", pricelists: "Price list", pastevents: "Past event material" })[b.category] || "Special offer form" : "Banner", banner_id: r.banner_id, banner_name: b.name, language: b.language, brand: b.brand, banner_type: b.banner_type, stored_at: b.stored_at, qty: r.qty, day: r.day ? "Day " + r.day : "", status: r.status };
     });
   }
-  const EVENT_COLS = ["event_id", "event_name", "ship_by", "category", "banner_id", "banner_name", "language", "brand", "banner_type", "stored_at", "qty", "status"];
+  const EVENT_COLS = ["event_id", "event_name", "ship_by", "day", "category", "banner_id", "banner_name", "language", "brand", "banner_type", "stored_at", "qty", "status"];
 
   // ───────────────────────── events (DOM) ──────────────────
   function setStep(id, d, group) {
@@ -1381,7 +1391,7 @@
       else if (a === "close-plan") { if (S.dirty && !confirm("Discard unsaved picks?")) return; S.planEvent = ""; S.dirty = false; render(); }
       else if (a === "save-plan") {
         el.disabled = true;
-        const items = Object.entries(S.draft).map(([banner_id, qty]) => ({ banner_id, qty: num(qty) })).filter((i) => i.qty > 0);
+        const items = Object.entries(S.draft).map(([banner_id, qty]) => ({ banner_id, qty: num(qty), day: (S.draftDay || {})[banner_id] || "" })).filter((i) => i.qty > 0);
         await act({ action: "saveBooking", event_id: S.planEvent, items });
         const ev = evById(S.planEvent); let made = 0;
         for (const it of items) {
@@ -1510,6 +1520,7 @@
     if (t.dataset.act === "wh-select") { S.whEvent = t.value; location.hash = "warehouse/" + t.value; return render(); }
     if (t.dataset.act === "audit-loc") { S.auditLoc = t.value; return render(); }
     if (t.dataset.qty) { S.draft[t.dataset.qty] = Math.max(0, num(t.value)); S.dirty = true; return render(); }
+    if (t.dataset.day !== undefined && t.classList.contains("day-sel")) { S.draftDay = S.draftDay || {}; if (t.value) S.draftDay[t.dataset.day] = t.value; else delete S.draftDay[t.dataset.day]; S.dirty = true; return render(); }
     if (t.dataset.pack) { t.checked ? S.packed.add(t.dataset.pack) : S.packed.delete(t.dataset.pack); return render(); }
   });
   // Forms are handled from the button click too: the preview frame can block real form submits.
