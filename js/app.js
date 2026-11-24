@@ -758,6 +758,14 @@
         return num(m[d]) > 0 ? [{ r, q: num(m[d]) }] : []; }
       return v === d ? [{ r, q: num(r.qty) }] : []; });
   }
+  // Which box(es) a packing-list row goes in: [[box, qty]…] – box is "pre", "1", "2"… or "" (no day)
+  function partsOf(r) { const v = r.day || "", q = num(r.qty);
+    if (!isSplit(v)) return [[v, q]];
+    const m = parseSplit(v), out = Object.entries(m).filter(([, x]) => num(x) > 0).map(([d, x]) => [d, num(x)]), used = out.reduce((a, x) => a + x[1], 0);
+    return used < q ? [...out, ["", q - used]] : out; }
+  const packKey = (evId, id, d) => `${evId}|${id}|${d}`;
+  const rowPacked = (evId, r) => partsOf(r).every(([d]) => S.packed.has(packKey(evId, r.banner_id, d)));
+  const boxName = (d) => (d === "pre" ? "Before the event" : d ? `Day ${d} box` : "No day set");
   function dayBoard(ev, rows, locked) {
     const n = daysOf(ev), boxes = ["pre", ...Array.from({ length: n }, (_, i) => String(i + 1))];
     return `<div class="day-drop-bar">
@@ -1176,17 +1184,30 @@
       <div class="muted">${esc([ev.venue, ev.city, ev.country].filter(Boolean).join(" · "))} · ${fmtDate(ev.start_date)} · <b>Ship by ${fmtDate(ev.ship_by) || "—"}</b> · back by ${fmtDate(ev.return_by) || "—"}</div>${stepper}
       <div class="wh-sum"><span><b>${cnt("stock") + cnt("supply")}</b> from the store</span><span><b>${cnt("print")}</b> to print</span><span><b>${cnt("design")}</b> being made by design</span></div></div>`;
     if (st === "Requested") {
-      const allPacked = rows.every((r) => S.packed.has(ev.event_id + "|" + r.banner_id));
+      const allPacked = rows.every((r) => rowPacked(ev.event_id, r));
+      const byBox = S.whView === "box";
+      const boxOrder = ["pre", ...Array.from({ length: daysOf(ev) }, (_, i) => String(i + 1)), ""];
+      const boxBody = boxOrder.map((d) => { const parts = rows.flatMap((r) => partsOf(r).filter(([x]) => x === d).map(([, q]) => ({ r, q }))); if (!parts.length) return "";
+        const done = parts.filter((p) => S.packed.has(packKey(ev.event_id, p.r.banner_id, d))).length, complete = done === parts.length;
+        return `<tr class="wh-band box-band ${complete ? "complete" : ""} ${d === "pre" ? "pre" : ""}"><td colspan="7">📦 ${esc(boxName(d))} <span class="muted">· ${parts.length} line${parts.length > 1 ? "s" : ""} · ${parts.reduce((a, p) => a + p.q, 0)} pcs</span>
+            <span class="box-prog">${complete ? "Box complete ✓" : `${done} of ${parts.length} packed`}</span></td></tr>` + parts.map(({ r, q }) => { const k = packKey(ev.event_id, r.banner_id, d), split = isSplit(r.day);
+          return `<tr class="${S.packed.has(k) ? "done" : ""}"><td><input type="checkbox" data-pack="${esc(k)}" ${S.packed.has(k) ? "checked" : ""} aria-label="Packed"></td>
+            <td>${thumbHTML(r.b)}</td><td><b>${esc(isDesign(r.b) ? designLabel(r.b) : r.b.name)}</b><div class="muted">${esc([r.banner_id, r.b.language, r.b.edition || r.b.format || r.b.banner_type].filter(Boolean).join(" · "))}${split ? ` · part of ${num(r.qty)} (${esc(dayText(r.day))})` : ""}</div></td>
+            <td>${esc((WH_GROUPS.find((g) => g[0] === r.g) || [, ""])[1])}</td><td>${whFrom(r, ev)}</td><td class="num"><b>${q}</b>${r.kind === "print" || r.kind === "design" ? " copies" : ""}</td><td></td></tr>`; }).join(""); }).join("");
       const body = WH_GROUPS.map(([g, label]) => { const gr = rows.filter((r) => r.g === g); if (!gr.length) return "";
         return `<tr class="wh-band"><td colspan="7">${esc(label)} <span class="muted">· ${gr.length}</span></td></tr>` + gr.map((r) => {
           const k = ev.event_id + "|" + r.banner_id; const s = r.kind === "stock" && !r.b.count_needed ? stock(r.b) : null;
-          return `<tr class="${S.packed.has(k) ? "done" : ""} ${isOneOff(r.b) ? "" : "drag-row"}" ${isOneOff(r.b) ? "" : `draggable="true" data-drow="${esc(r.banner_id)}"`}><td>${isOneOff(r.b) ? "" : `<span class="grip" title="Drag onto a day box">⠿</span>`}<input type="checkbox" data-pack="${esc(k)}" ${S.packed.has(k) ? "checked" : ""} aria-label="Packed"></td>
+          const rp = rowPacked(ev.event_id, r);
+          return `<tr class="${rp ? "done" : ""} ${isOneOff(r.b) ? "" : "drag-row"}" ${isOneOff(r.b) ? "" : `draggable="true" data-drow="${esc(r.banner_id)}"`}><td>${isOneOff(r.b) ? "" : `<span class="grip" title="Drag onto a day box">⠿</span>`}<input type="checkbox" data-packrow="${esc(r.banner_id)}" ${rp ? "checked" : ""} aria-label="Packed"></td>
             <td>${thumbHTML(r.b)}</td><td><b>${esc(isDesign(r.b) ? designLabel(r.b) : r.b.name)}</b><div class="muted">${esc([r.banner_id, r.b.language, r.b.edition || r.b.format || r.b.banner_type].filter(Boolean).join(" · "))}</div>${r.day ? `<span class="kit-day">📦 ${esc(dayText(r.day))}</span>` : ""}</td>
             <td>${isOneOff(r.b) ? '<span class="muted">digital</span>' : whDaySelect(ev, r)}</td><td>${whFrom(r, ev)}</td><td class="num"><b>${r.qty}</b>${r.kind === "print" || r.kind === "design" ? " copies" : ""}</td>
             <td class="num">${s ? (s.available < r.qty ? `<span class="pill bad">${s.available}</span>` : s.available) : r.b.count_needed ? `<span class="pill warn">count needed</span>` : spareOf(r.banner_id) ? `<span class="pill good" title="Left over from earlier events – send these first and print fewer">${spareOf(r.banner_id)} spare</span>` : "—"}</td></tr>`; }).join(""); }).join("");
-      return head + info + dayBoard(ev, rows, false) + `<div class="table-wrap"><table class="tbl">
-        <thead><tr><th>Packed</th><th></th><th>Item</th><th>Day box</th><th>From</th><th class="num">Qty</th><th class="num">In store now</th></tr></thead>
-        <tbody>${body}</tbody></table></div>
+      return head + info + (byBox ? "" : dayBoard(ev, rows, false)) + `<div class="wh-view-toggle"><span>Pack</span>
+          <button class="chip ${byBox ? "" : "on"}" data-whview="type">By type of item</button><button class="chip ${byBox ? "on" : ""}" data-whview="box">By box</button>
+          <span class="muted">${byBox ? "One section per box – tick each line as it goes in. A box turns green when it's complete." : "Sort items into day boxes here, then switch to “By box” to pack them."}</span></div>
+        <div class="table-wrap"><table class="tbl">
+        <thead><tr><th>Packed</th><th></th><th>Item</th><th>${byBox ? "Type" : "Day box"}</th><th>From</th><th class="num">Qty</th><th class="num">${byBox ? "" : "In store now"}</th></tr></thead>
+        <tbody>${byBox ? boxBody : body}</tbody></table></div>
         ${S.bookings.some((x) => x.event_id === ev.event_id && isOneOff(byId(x.banner_id))) ? `<p class="muted">📱 Digital assets for this event aren't packed – they're on the <a href="#events" data-act="show-evplan" data-id="${esc(ev.event_id)}">Event plan</a> under “Before the event”.</p>` : ""}
         ${cnt("design") ? `<p class="muted">🎨 Design-team items are packed once they've been designed and printed – track them in <a href="#reports" data-act="go-jobs">Reports › Design jobs</a>.</p>` : ""}
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
@@ -1479,6 +1500,7 @@
     const evtab = t.closest("[data-evtab]"); if (evtab) { S.evTab = evtab.dataset.evtab; return render(); }
     const evtype = t.closest("[data-evtype]"); if (evtype) { S.evType = evtype.dataset.evtype; return render(); }
     const ifl = t.closest("[data-ideafilter]"); if (ifl) { S.ideaFilter = ifl.dataset.ideafilter; return render(); }
+    const whv = t.closest("[data-whview]"); if (whv) { S.whView = whv.dataset.whview; return render(); }
     const rtab = t.closest("[data-rtab]"); if (rtab) { S.reportTab = rtab.dataset.rtab; return render(); }
     const jf = t.closest("[data-jobfilter]"); if (jf) { S.jobFilter = jf.dataset.jobfilter; return render(); }
     const el = t.closest("[data-act]"); if (!el) return;
@@ -1627,6 +1649,8 @@
     if (t.dataset.split) { const id = t.dataset.split, m = parseSplit((S.draftDay || {})[id]); m[t.dataset.d] = Math.max(0, num(t.value));
       const tot = Object.values(m).reduce((a, q) => a + num(q), 0); S.draftDay[id] = makeSplit(m) === "split:" ? "split:1=0" : makeSplit(m); S.draft[id] = tot; S.dirty = true; return render(); }
     if (t.dataset.pack) { t.checked ? S.packed.add(t.dataset.pack) : S.packed.delete(t.dataset.pack); return render(); }
+    if (t.dataset.packrow) { const r = S.bookings.find((b) => b.event_id === S.whEvent && b.banner_id === t.dataset.packrow); if (!r) return;
+      partsOf(r).forEach(([d]) => { const k = packKey(S.whEvent, r.banner_id, d); t.checked ? S.packed.add(k) : S.packed.delete(k); }); return render(); }
   });
   // Forms are handled from the button click too: the preview frame can block real form submits.
   document.addEventListener("click", (e) => {
