@@ -187,7 +187,8 @@
     S.banners = S.banners.filter((b) => b.category !== "templates");
     const evDate = (b) => (evById(b.event_id) || {}).start_date || b.version || "";
     const order = MATERIAL_GROUPS.flatMap(([g, l]) => l.map((m) => [g, m]));
-    const isStyle = (b) => (b.category === "pastevents" && !isGeneric(b)) || (b.category === "clinical" && /^y/i.test(b.design_only || ""));
+    // Old or superseded designs stay on their event's record but aren't offered as a style to copy
+    const isStyle = (b) => !/^(old design|superseded)/i.test(b.status || "") && ((b.category === "pastevents" && !isGeneric(b)) || (b.category === "clinical" && /^y/i.test(b.design_only || "")));
     const mats = uniq(S.banners.filter((b) => isStyle(b) && b.material).map((b) => b.material));
     mats.sort((a, b) => (order.findIndex((x) => x[1] === a) + 1 || 99) - (order.findIndex((x) => x[1] === b) + 1 || 99));
     mats.forEach((m) => {
