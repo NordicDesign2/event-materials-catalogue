@@ -1222,7 +1222,10 @@
           <td><select data-ideastatus="${esc(j.idea_id)}" aria-label="Status">${JOB_STATUS.map(([v, l]) => `<option value="${v}" ${j.status === v ? "selected" : ""}>${l}</option>`).join("")}</select><span class="print-only">${esc(jobLabel(j.status))}</span></td>
           <td class="no-print"><div style="display:flex;gap:6px"><input type="text" placeholder="Note…" data-ideanote="${esc(j.idea_id)}" style="width:130px"><button class="btn small" data-act="idea-save" data-id="${esc(j.idea_id)}">Update</button></div></td>
         </tr>`).join("")}</tbody></table></div>`
-      : `<div class="empty"><h2>${f === "open" ? "Nothing for the design team to make" : "No design jobs here"}</h2><p>Jobs appear here when someone picks something from <b>Made for each event</b> (or <b>From past events</b>) for an event and saves the list.</p></div>`}`;
+      : `<div class="empty"><h2>${f === "In design" ? "Nothing in design yet" : f === "Done" ? "Nothing finished yet" : f === "open" ? "Nothing for the design team to make" : "No design jobs here"}</h2><p>${f === "In design"
+        ? `When a designer starts a job, change its <b>Status</b> from “To do” to “In design” (in the <b>To do</b> list) and it moves here.${n("New") ? ` There ${n("New") === 1 ? "is 1 job" : `are ${n("New")} jobs`} waiting in To do.` : ""}`
+        : f === "Done" ? "Set a job's <b>Status</b> to “Done” once its file has gone to print and it moves here."
+        : "Jobs appear here when someone picks something from <b>Made for each event</b>, <b>Digital assets</b> or <b>From past events</b> for an event and saves the list."}</p></div>`}`;
   }
   function stockRows() {
     const seen = new Set();
