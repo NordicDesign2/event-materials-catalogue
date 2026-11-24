@@ -728,15 +728,18 @@
   }
   function dayBoard(ev, rows, locked) {
     const n = daysOf(ev), boxes = ["", ...Array.from({ length: n }, (_, i) => String(i + 1))];
-    const sel = S.daySel || {};
-    return `<div class="panel day-board-wrap"><h2 style="margin:0 0 4px">📦 Day boxes</h2>
-      <div class="muted" style="margin-bottom:10px">${locked ? "Which box each item went in." : "Drag each item into the box for the day it's needed. On a tablet: tap an item, then tap a box. Changes save straight away."}</div>
-      <div class="day-board">${boxes.map((d) => { const chips = dayChips(rows, d), units = chips.reduce((a, c) => a + c.q, 0);
-        return `<div class="day-box ${d ? "" : "unassigned"}" data-dbox="${d}"><div class="day-box-h">${d ? `Day ${d}` : "Not in a day box yet"} <span>${chips.length} item${chips.length === 1 ? "" : "s"}${units ? ` · ${units} pcs` : ""}</span></div>
-          ${chips.map((c) => `<div class="day-chip ${sel.id === c.r.banner_id && sel.from === d ? "sel" : ""}" ${locked ? "" : `draggable="true" data-dchip="${esc(c.r.banner_id)}" data-from="${d}"`}>
-            ${thumbHTML(c.r.b)}<span class="nm">${esc(isDesign(c.r.b) ? designLabel(c.r.b) : c.r.b.name)}</span><b>× ${c.q}</b></div>`).join("") || `<div class="day-empty">${d ? "Drop items here" : "Everything is in a day box ✓"}</div>`}
-        </div>`; }).join("")}</div></div>`;
+    return `<div class="day-drop-bar">
+      <div class="day-drop-hint">📦 <b>Day boxes</b> – drag a row from the list below onto a box, or use the Day menu on the row.</div>
+      <div class="day-drops">${boxes.map((d) => { const chips = dayChips(rows, d), units = chips.reduce((a, c) => a + c.q, 0);
+        return `<div class="day-drop ${d ? "" : "unassigned"}" data-dbox="${d}"><b>${d ? `Day ${d}` : "No day yet"}</b><span>${chips.length} item${chips.length === 1 ? "" : "s"}${units ? ` · ${units} pcs` : ""}</span></div>`; }).join("")}</div></div>`;
   }
+  async function setRowDay(evId, id, day) {
+    try { await act({ action: "setBookingDay", event_id: evId, banner_id: id, day: day || "" }); render(); } catch (err) { toast(err.message, true); }
+  }
+  const whDaySelect = (ev, r) => { const n = daysOf(ev), v = r.day || "";
+    return `<select class="day-sel" data-whday="${esc(r.banner_id)}" aria-label="Day box">
+      <option value="">No day</option>${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${v === String(i + 1) ? "selected" : ""}>Day ${i + 1}</option>`).join("")}
+      ${isSplit(v) ? `<option value="__split" selected>${esc(dayText(v))}</option>` : ""}</select>`; };
   async function moveDay(evId, id, from, to) {
     if (from === to) return;
     const bk = S.bookings.find((b) => b.event_id === evId && b.banner_id === id); if (!bk) return;
@@ -1136,14 +1139,14 @@
     if (st === "Requested") {
       const allPacked = rows.every((r) => S.packed.has(ev.event_id + "|" + r.banner_id));
       const body = WH_GROUPS.map(([g, label]) => { const gr = rows.filter((r) => r.g === g); if (!gr.length) return "";
-        return `<tr class="wh-band"><td colspan="6">${esc(label)} <span class="muted">· ${gr.length}</span></td></tr>` + gr.map((r) => {
+        return `<tr class="wh-band"><td colspan="7">${esc(label)} <span class="muted">· ${gr.length}</span></td></tr>` + gr.map((r) => {
           const k = ev.event_id + "|" + r.banner_id; const s = r.kind === "stock" && !r.b.count_needed ? stock(r.b) : null;
-          return `<tr class="${S.packed.has(k) ? "done" : ""}"><td><input type="checkbox" data-pack="${esc(k)}" ${S.packed.has(k) ? "checked" : ""} aria-label="Packed"></td>
+          return `<tr class="${S.packed.has(k) ? "done" : ""} ${isOneOff(r.b) ? "" : "drag-row"}" ${isOneOff(r.b) ? "" : `draggable="true" data-drow="${esc(r.banner_id)}"`}><td>${isOneOff(r.b) ? "" : `<span class="grip" title="Drag onto a day box">⠿</span>`}<input type="checkbox" data-pack="${esc(k)}" ${S.packed.has(k) ? "checked" : ""} aria-label="Packed"></td>
             <td>${thumbHTML(r.b)}</td><td><b>${esc(isDesign(r.b) ? designLabel(r.b) : r.b.name)}</b><div class="muted">${esc([r.banner_id, r.b.language, r.b.edition || r.b.format || r.b.banner_type].filter(Boolean).join(" · "))}</div>${r.day ? `<span class="kit-day">📦 ${esc(dayText(r.day))}</span>` : ""}</td>
-            <td>${whFrom(r, ev)}</td><td class="num"><b>${r.qty}</b>${r.kind === "print" || r.kind === "design" ? " copies" : ""}</td>
+            <td>${isOneOff(r.b) ? '<span class="muted">digital</span>' : whDaySelect(ev, r)}</td><td>${whFrom(r, ev)}</td><td class="num"><b>${r.qty}</b>${r.kind === "print" || r.kind === "design" ? " copies" : ""}</td>
             <td class="num">${s ? (s.available < r.qty ? `<span class="pill bad">${s.available}</span>` : s.available) : r.b.count_needed ? `<span class="pill warn">count needed</span>` : spareOf(r.banner_id) ? `<span class="pill good" title="Left over from earlier events – send these first and print fewer">${spareOf(r.banner_id)} spare</span>` : "—"}</td></tr>`; }).join(""); }).join("");
       return head + info + dayBoard(ev, rows, false) + `<div class="table-wrap"><table class="tbl">
-        <thead><tr><th>Packed</th><th></th><th>Item</th><th>From</th><th class="num">Qty</th><th class="num">In store now</th></tr></thead>
+        <thead><tr><th>Packed</th><th></th><th>Item</th><th>Day box</th><th>From</th><th class="num">Qty</th><th class="num">In store now</th></tr></thead>
         <tbody>${body}</tbody></table></div>
         ${cnt("design") ? `<p class="muted">🎨 Design-team items are packed once they've been designed and printed – track them in <a href="#reports" data-act="go-jobs">Reports › Design jobs</a>.</p>` : ""}
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
@@ -1592,15 +1595,13 @@
     handleForm({ target: form, preventDefault() {} });
   }, true);
   document.addEventListener("submit", (e) => handleForm(e));
-  document.addEventListener("dragstart", (e) => { const c = e.target.closest && e.target.closest("[data-dchip]"); if (!c) return;
-    S.drag = { id: c.dataset.dchip, from: c.dataset.from }; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", c.dataset.dchip); c.classList.add("dragging"); });
-  document.addEventListener("dragend", () => { S.drag = null; document.querySelectorAll(".day-box.over, .day-chip.dragging").forEach((x) => x.classList.remove("over", "dragging")); });
-  document.addEventListener("dragover", (e) => { const b = e.target.closest && e.target.closest("[data-dbox]"); if (!b || !S.drag) return; e.preventDefault(); document.querySelectorAll(".day-box.over").forEach((x) => x !== b && x.classList.remove("over")); b.classList.add("over"); });
+  document.addEventListener("dragstart", (e) => { const r = e.target.closest && e.target.closest("[data-drow]"); if (!r) return;
+    S.drag = { id: r.dataset.drow }; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", r.dataset.drow); r.classList.add("dragging"); document.body.classList.add("is-dragging"); });
+  document.addEventListener("dragend", () => { S.drag = null; document.body.classList.remove("is-dragging"); document.querySelectorAll(".day-drop.over, .dragging").forEach((x) => x.classList.remove("over", "dragging")); });
+  document.addEventListener("dragover", (e) => { const b = e.target.closest && e.target.closest("[data-dbox]"); if (!b || !S.drag) return; e.preventDefault(); document.querySelectorAll(".day-drop.over").forEach((x) => x !== b && x.classList.remove("over")); b.classList.add("over"); });
   document.addEventListener("drop", (e) => { const b = e.target.closest && e.target.closest("[data-dbox]"); if (!b || !S.drag) return; e.preventDefault();
-    const d = S.drag; S.drag = null; moveDay(S.whEvent, d.id, d.from, b.dataset.dbox); });
-  document.addEventListener("click", (e) => { const c = e.target.closest("[data-dchip]");
-    if (c) { const was = S.daySel; S.daySel = was && was.id === c.dataset.dchip && was.from === c.dataset.from ? null : { id: c.dataset.dchip, from: c.dataset.from }; return render(); }
-    const b = e.target.closest("[data-dbox]"); if (b && S.daySel) { const s2 = S.daySel; moveDay(S.whEvent, s2.id, s2.from, b.dataset.dbox); } });
+    const d = S.drag; S.drag = null; document.body.classList.remove("is-dragging"); setRowDay(S.whEvent, d.id, b.dataset.dbox); });
+  document.addEventListener("change", (e) => { const t = e.target; if (!t.dataset || !t.dataset.whday || t.value === "__split") return; setRowDay(S.whEvent, t.dataset.whday, t.value); });
   async function handleForm(e) {
     if (e.target.id === "idea-form") {
       e.preventDefault();

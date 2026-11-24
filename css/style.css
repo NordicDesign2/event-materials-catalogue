@@ -549,3 +549,16 @@ tr.wh-band td { background: var(--accent-2, #e6f1f4); font-weight: 700; color: v
 .day-chip.sel { outline: 3px solid #3a9a83; }
 .day-chip.dragging { opacity: .4; }
 .day-empty { font-size: 12px; color: var(--ink-3); text-align: center; padding: 18px 4px; }
+
+.day-drop-bar { position: sticky; top: 0; z-index: 5; background: var(--bg, #f4f8f9); padding: 10px 0 10px; margin-bottom: 8px; }
+.day-drop-hint { font-size: 12.5px; color: #00475a; margin-bottom: 6px; }
+.day-drops { display: flex; gap: 8px; flex-wrap: wrap; }
+.day-drop { flex: 1 1 140px; border: 2px dashed #b9d3db; border-radius: 10px; padding: 8px 10px; background: #fff; display: flex; flex-direction: column; transition: background .15s, border-color .15s, transform .15s; }
+.day-drop b { color: #00475a; font-size: 14px; }
+.day-drop span { font-size: 11.5px; color: var(--ink-3); }
+.day-drop.unassigned { background: #fff8ec; border-color: #f0d4a3; }
+body.is-dragging .day-drop { border-color: #3a9a83; }
+.day-drop.over { background: #e3f3ef; border-style: solid; transform: scale(1.03); }
+tr.drag-row { cursor: grab; }
+tr.drag-row.dragging { opacity: .4; }
+.grip { color: #9bb5be; margin-right: 6px; font-size: 14px; cursor: grab; }
