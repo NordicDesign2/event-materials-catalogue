@@ -17,7 +17,7 @@ window.CATALOGUE_CONFIG = {
   // and the print-ready PDFs have been added to the pdfs/ folder.
   allowDownloads: false,
 
-  apiUrl: "",
+  apiUrl: "https://script.google.com/macros/s/AKfycbweOZfPwOFu2rVfKwASb-yhzhgYaSnYbTPl1SowZnR4PSp4mwQnx44wOc5ab6efSyp9/exec",
 
   // Demo-mode data files (also used by the Google Sheet's one-click import)
   bannersCsv: "data/banners.csv",
