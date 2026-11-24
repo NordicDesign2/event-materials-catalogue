@@ -272,6 +272,10 @@
       st.bookings.filter((b) => b.event_id === p.event_id).forEach((b) => { b.status = "Returned"; b.updated_at = now; b.updated_by = p.by; });
     } else if (p.action === "addEvent") {
       st.events.push(p.event);
+    } else if (p.action === "setBookingDay") {
+      const b = st.bookings.find((x) => x.event_id === p.event_id && x.banner_id === p.banner_id); if (!b) throw new Error("Item not on this event's list");
+      if (b.status !== "Requested") throw new Error("Already dispatched – day boxes can't be changed");
+      b.day = p.day || ""; b.updated_at = now; b.updated_by = p.by;
     } else if (p.action === "deleteEvent") {
       if (!st.events.some((e) => e.event_id === p.event_id)) throw new Error("Only events added here can be deleted in demo mode");
       st.events = st.events.filter((e) => e.event_id !== p.event_id);
@@ -714,6 +718,40 @@
       ${n > 1 ? `<option value="split" ${sp ? "selected" : ""}>Split across days…</option>` : ""}</select>
       ${sp ? `<div class="split-days">${Array.from({ length: n }, (_, i) => `<label>Day ${i + 1}<input type="number" min="0" value="${num(m[i + 1])}" data-split="${esc(b.banner_id)}" data-d="${i + 1}" ${locked ? "disabled" : ""}></label>`).join("")}</div>` : ""}`; };
 
+  // Warehouse day boxes: drag (or tap, then tap a box) to say which day box each item goes in
+  function dayChips(rows, d) {
+    return rows.flatMap((r) => { if (isOneOff(r.b)) return []; const v = r.day || "";
+      if (isSplit(v)) { const m = parseSplit(v), used = Object.values(m).reduce((a, q) => a + num(q), 0);
+        if (d === "") { const left = num(r.qty) - used; return left > 0 ? [{ r, q: left }] : []; }
+        return num(m[d]) > 0 ? [{ r, q: num(m[d]) }] : []; }
+      return v === d ? [{ r, q: num(r.qty) }] : []; });
+  }
+  function dayBoard(ev, rows, locked) {
+    const n = daysOf(ev), boxes = ["", ...Array.from({ length: n }, (_, i) => String(i + 1))];
+    const sel = S.daySel || {};
+    return `<div class="panel day-board-wrap"><h2 style="margin:0 0 4px">📦 Day boxes</h2>
+      <div class="muted" style="margin-bottom:10px">${locked ? "Which box each item went in." : "Drag each item into the box for the day it's needed. On a tablet: tap an item, then tap a box. Changes save straight away."}</div>
+      <div class="day-board">${boxes.map((d) => { const chips = dayChips(rows, d), units = chips.reduce((a, c) => a + c.q, 0);
+        return `<div class="day-box ${d ? "" : "unassigned"}" data-dbox="${d}"><div class="day-box-h">${d ? `Day ${d}` : "Not in a day box yet"} <span>${chips.length} item${chips.length === 1 ? "" : "s"}${units ? ` · ${units} pcs` : ""}</span></div>
+          ${chips.map((c) => `<div class="day-chip ${sel.id === c.r.banner_id && sel.from === d ? "sel" : ""}" ${locked ? "" : `draggable="true" data-dchip="${esc(c.r.banner_id)}" data-from="${d}"`}>
+            ${thumbHTML(c.r.b)}<span class="nm">${esc(isDesign(c.r.b) ? designLabel(c.r.b) : c.r.b.name)}</span><b>× ${c.q}</b></div>`).join("") || `<div class="day-empty">${d ? "Drop items here" : "Everything is in a day box ✓"}</div>`}
+        </div>`; }).join("")}</div></div>`;
+  }
+  async function moveDay(evId, id, from, to) {
+    if (from === to) return;
+    const bk = S.bookings.find((b) => b.event_id === evId && b.banner_id === id); if (!bk) return;
+    const total = num(bk.qty), cur = bk.day || "";
+    let m = isSplit(cur) ? parseSplit(cur) : cur ? { [cur]: total } : {};
+    const used = Object.values(m).reduce((a, q) => a + num(q), 0);
+    const q = from === "" ? total - used : num(m[from]);
+    if (from !== "") delete m[from];
+    if (to !== "") m[to] = num(m[to]) + q;
+    const ks = Object.keys(m).filter((k) => num(m[k]) > 0), sum = ks.reduce((a, k) => a + num(m[k]), 0);
+    const day = !ks.length ? "" : ks.length === 1 && sum === total ? ks[0] : makeSplit(m);
+    S.daySel = null;
+    try { await act({ action: "setBookingDay", event_id: evId, banner_id: id, day }); render(); } catch (err) { toast(err.message, true); }
+  }
+
   // ───────────────────────── planning tray ─────────────────
   function renderTray() {
     const ev = evById(S.planEvent); if (!ev) return;
@@ -1104,7 +1142,7 @@
             <td>${thumbHTML(r.b)}</td><td><b>${esc(isDesign(r.b) ? designLabel(r.b) : r.b.name)}</b><div class="muted">${esc([r.banner_id, r.b.language, r.b.edition || r.b.format || r.b.banner_type].filter(Boolean).join(" · "))}</div>${r.day ? `<span class="kit-day">📦 ${esc(dayText(r.day))}</span>` : ""}</td>
             <td>${whFrom(r, ev)}</td><td class="num"><b>${r.qty}</b>${r.kind === "print" || r.kind === "design" ? " copies" : ""}</td>
             <td class="num">${s ? (s.available < r.qty ? `<span class="pill bad">${s.available}</span>` : s.available) : r.b.count_needed ? `<span class="pill warn">count needed</span>` : spareOf(r.banner_id) ? `<span class="pill good" title="Left over from earlier events – send these first and print fewer">${spareOf(r.banner_id)} spare</span>` : "—"}</td></tr>`; }).join(""); }).join("");
-      return head + info + `<div class="table-wrap"><table class="tbl">
+      return head + info + dayBoard(ev, rows, false) + `<div class="table-wrap"><table class="tbl">
         <thead><tr><th>Packed</th><th></th><th>Item</th><th>From</th><th class="num">Qty</th><th class="num">In store now</th></tr></thead>
         <tbody>${body}</tbody></table></div>
         ${cnt("design") ? `<p class="muted">🎨 Design-team items are packed once they've been designed and printed – track them in <a href="#reports" data-act="go-jobs">Reports › Design jobs</a>.</p>` : ""}
@@ -1551,6 +1589,15 @@
     handleForm({ target: form, preventDefault() {} });
   }, true);
   document.addEventListener("submit", (e) => handleForm(e));
+  document.addEventListener("dragstart", (e) => { const c = e.target.closest && e.target.closest("[data-dchip]"); if (!c) return;
+    S.drag = { id: c.dataset.dchip, from: c.dataset.from }; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", c.dataset.dchip); c.classList.add("dragging"); });
+  document.addEventListener("dragend", () => { S.drag = null; document.querySelectorAll(".day-box.over, .day-chip.dragging").forEach((x) => x.classList.remove("over", "dragging")); });
+  document.addEventListener("dragover", (e) => { const b = e.target.closest && e.target.closest("[data-dbox]"); if (!b || !S.drag) return; e.preventDefault(); document.querySelectorAll(".day-box.over").forEach((x) => x !== b && x.classList.remove("over")); b.classList.add("over"); });
+  document.addEventListener("drop", (e) => { const b = e.target.closest && e.target.closest("[data-dbox]"); if (!b || !S.drag) return; e.preventDefault();
+    const d = S.drag; S.drag = null; moveDay(S.whEvent, d.id, d.from, b.dataset.dbox); });
+  document.addEventListener("click", (e) => { const c = e.target.closest("[data-dchip]");
+    if (c) { const was = S.daySel; S.daySel = was && was.id === c.dataset.dchip && was.from === c.dataset.from ? null : { id: c.dataset.dchip, from: c.dataset.from }; return render(); }
+    const b = e.target.closest("[data-dbox]"); if (b && S.daySel) { const s2 = S.daySel; moveDay(S.whEvent, s2.id, s2.from, b.dataset.dbox); } });
   async function handleForm(e) {
     if (e.target.id === "idea-form") {
       e.preventDefault();
