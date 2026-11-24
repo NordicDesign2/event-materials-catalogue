@@ -33,7 +33,7 @@ img { display: block; }
   padding: 12px 24px; background: #fff; border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 220px; }
-.brand-mark { width: 40px; height: 40px; border-radius: 50%; }
+.brand-mark { height: 42px; width: auto; flex: none; object-fit: contain; }
 .brand-title { font-family: Poppins, sans-serif; font-weight: 600; font-size: 17px; color: var(--accent); }
 .brand-sub { color: var(--ink-3); font-size: 12px; }
 .tabs { display: flex; gap: 4px; flex: 1; }
@@ -511,4 +511,8 @@ tr.wh-band td { background: var(--accent-2, #e6f1f4); font-weight: 700; color: v
 .cat-switch { flex: 1 1 100%; }
 @media (max-width: 900px) {
   .tabs { flex: 1 1 100%; }
+}
+@media (max-width: 480px) {
+  .tabs { flex-wrap: wrap; row-gap: 6px; }
+  .brand-mark { height: 36px; }
 }
