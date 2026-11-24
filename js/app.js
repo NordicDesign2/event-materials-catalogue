@@ -222,7 +222,7 @@
       const st = demoStore();
       S.banners = [...parseCSV(bt).map((b) => asBanner({ ...b, ...(st.overrides?.[b.banner_id] || {}) })), ...parseCSV(ot).map(asOffer), ...parseCSV(pt).map(asPoster), ...parseCSV(lt).map(asPriceList), ...parseCSV(at).map(asPast), ...parseCSV(brt).map(asBrochure), ...parseCSV(clt).map(asClinical), ...parseCSV(dgt).map(asDigital), ...parseCSV(mt).map((o) => asMisc({ ...o, ...(st.overrides?.[o.item_id] || {}) }))];
       S.kits = parseCSV(kt);
-      S.events = [...parseCSV(et), ...(st.events || [])];
+      S.events = [...parseCSV(et), ...(st.events || []).map((e) => ({ ...e, _added: true }))];
       S.bookings = st.bookings || [];
       S.ideas = st.ideas || [];
       S.movements = st.movements || [];
@@ -271,6 +271,10 @@
       st.bookings.filter((b) => b.event_id === p.event_id).forEach((b) => { b.status = "Returned"; b.updated_at = now; b.updated_by = p.by; });
     } else if (p.action === "addEvent") {
       st.events.push(p.event);
+    } else if (p.action === "deleteEvent") {
+      if (!st.events.some((e) => e.event_id === p.event_id)) throw new Error("Only events added here can be deleted in demo mode");
+      st.events = st.events.filter((e) => e.event_id !== p.event_id);
+      st.bookings = st.bookings.filter((b) => b.event_id !== p.event_id);
     } else if (p.action === "addIdea") {
       st.ideas = st.ideas || [];
       const n = st.ideas.reduce((m, x) => Math.max(m, num(String(x.idea_id).replace(/\D/g, ""))), 0) + 1;
@@ -1018,6 +1022,7 @@
         <button class="btn ${archive ? "" : "primary"} small" data-act="plan" data-id="${esc(e.event_id)}">${st && st !== "Requested" ? "View materials" : rows.length ? "Edit materials" : "Pick materials"}</button>
         ${rows.length ? `<button class="btn small" data-act="to-warehouse" data-id="${esc(e.event_id)}">Warehouse</button>
         <button class="btn small" data-act="export-event" data-id="${esc(e.event_id)}">CSV</button>` : ""}
+        ${LIVE || e._added ? `<button class="btn small danger-btn" data-act="delete-event" data-id="${esc(e.event_id)}" title="Delete this event and its materials list">${S.confirmDel === e.event_id ? "Click again to delete" : "Delete"}</button>` : ""}
       </div>
     </div>`;
   }
@@ -1407,6 +1412,13 @@
       }
       else if (a === "show-made") { const ev = evById(el.dataset.id); S.cat = "pastevents"; resetFilters(); S.f.section = ev ? ev.event_name : "all"; go("catalogue"); }
       else if (a === "toggle-new-event") { S.showNewEvent = !S.showNewEvent; S.showRequest = false; render(); }
+      else if (a === "delete-event") {
+        const id = el.dataset.id, ev = evById(id);
+        if (S.confirmDel !== id) { S.confirmDel = id; render(); clearTimeout(S._delT); S._delT = setTimeout(() => { if (S.confirmDel === id) { S.confirmDel = ""; render(); } }, 5000); return; }
+        S.confirmDel = "";
+        try { await act({ action: "deleteEvent", event_id: id }); if (S.planEvent === id) S.planEvent = ""; if (S.kitEvent === id) S.kitEvent = ""; render(); toast(`Deleted “${ev ? ev.event_name : id}”`); }
+        catch (err) { toast(err.message, true); }
+      }
       else if (a === "close-request-mail") { S.requestMail = ""; render(); }
       else if (a === "toggle-request") { S.showRequest = !S.showRequest; S.showNewEvent = false; render(); }
       else if (a === "reuse") {

@@ -148,6 +148,11 @@ function doPost(e) {
     } else if (p.action === 'moveStock') {
       updateStock_(p.banner_id, (r) => { mv('', p.banner_id, 'moved', Number(r.qty_owned) || 0, 'Now stored at ' + p.stored_at + ' (was ' + (r.stored_at || '—') + ')'); return { stored_at: p.stored_at }; });
 
+    } else if (p.action === 'deleteEvent') {
+      if (!p.event_id) throw new Error('No event given');
+      deleteWhere_('Events', (r) => r.event_id === p.event_id);
+      deleteWhere_('Bookings', (r) => r.event_id === p.event_id);
+
     } else if (p.action === 'addEvent') {
       const ev = p.event || {};
       if (!ev.event_name || !ev.start_date) throw new Error('Event name and start date are required');

@@ -516,3 +516,6 @@ tr.wh-band td { background: var(--accent-2, #e6f1f4); font-weight: 700; color: v
   .tabs { flex-wrap: wrap; row-gap: 6px; }
   .brand-mark { height: 36px; }
 }
+
+.danger-btn { color: #b42318; border-color: #f1c4bf; }
+.danger-btn:hover { background: #fdecea; }
