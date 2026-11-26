@@ -222,7 +222,9 @@
       const r = await fetch(CFG.apiUrl + (CFG.apiUrl.includes("?") ? "&" : "?") + "action=all&t=" + Date.now());
       const j = await r.json();
       if (!j.ok) throw new Error(j.error || "Could not load the Google Sheet");
-      S.banners = [...j.banners.map(asBanner), ...(j.offers || []).map(asOffer), ...(j.posters || []).map(asPoster), ...(j.pricelists || []).map(asPriceList), ...(j.pastevents || []).map(asPast), ...(j.brochures || []).map(asBrochure), ...(j.clinical || []).map(asClinical), ...(j.digital || []).map(asDigital), ...(j.misc || []).map(asMisc)]; S.kits = j.kitlists || []; S.events = j.events; S.bookings = j.bookings; S.movements = j.movements; S.ideas = j.ideas || [];
+      S.banners = [...j.banners.map(asBanner), ...(j.offers || []).map(asOffer), ...(j.posters || []).map(asPoster), ...(j.pricelists || []).map(asPriceList), ...(j.pastevents || []).map(asPast), ...(j.brochures || []).map(asBrochure), ...(j.clinical || []).map(asClinical), ...(j.digital || []).map(asDigital), ...(j.misc || []).map(asMisc)]; S.kits = j.kitlists || [];
+      // Kit lists are a record of past events, kept in the site's data folder – read them from there so updates show straight away
+      try { const kr = await fetch((CFG.kitlistsCsv || "data/kitlists.csv") + "?t=" + Date.now(), { cache: "no-cache" }); if (kr.ok) { const kk = parseCSV(await kr.text()); if (kk.length) S.kits = kk; } } catch (e) {} S.events = j.events; S.bookings = j.bookings; S.movements = j.movements; S.ideas = j.ideas || [];
     } else {
       const [bt, et, ot, pt, lt, at, brt, mt, kt, clt, dgt] = await Promise.all([CFG.bannersCsv, CFG.eventsCsv, CFG.offersCsv || "data/offers.csv", CFG.postersCsv || "data/posters.csv", CFG.pricelistsCsv || "data/pricelists.csv", CFG.pasteventsCsv || "data/pastevents.csv", CFG.brochuresCsv || "data/brochures.csv", CFG.miscCsv || "data/misc.csv", CFG.kitlistsCsv || "data/kitlists.csv", CFG.clinicalCsv || "data/clinical.csv", CFG.digitalCsv || "data/digital.csv"].map((u) => fetch(u, { cache: "no-cache" }).then((r) => (r.ok ? r.text() : ""))));
       const st = demoStore();
